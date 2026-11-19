@@ -25,8 +25,12 @@ Você preenche a entrada, o almoço e a saída. O site mostra na hora:
 - **Lançar folga**, de um dia ou de vários dias seguidos, com motivo opcional:
   - *Folga usando o banco de horas*: desconta do saldo a jornada de cada dia.
   - *Folga sem desconto*: feriado, atestado, férias ou folga dada pela empresa. O saldo não muda.
+- **Feriados nacionais automáticos**: no dia do feriado, o site sugere lançar como folga sem desconto em um clique. Carnaval e Corpus Christi aparecem como ponto facultativo. Pode ser desligado em Ajustes.
 - **Dias lançados**: histórico com o resultado e o saldo depois de cada dia. Dá para **editar** ou **excluir** qualquer dia, e o saldo é corrigido sozinho.
+- **Resumo do mês**: escolha o mês e veja a hora extra, os descontos, as folgas, o resultado e como o saldo começou e terminou.
+- **Desfazer**: logo depois de lançar, salvar, lançar folga ou excluir, um botão permite voltar atrás.
 - **Sequência automática**: depois de lançar ou editar, o site vai para o próximo dia útil ainda não lançado.
+- **Backup**: baixe um arquivo com todos os dados e restaure em outro navegador, computador ou celular.
 - **Como usar**: guia dentro do próprio site explicando cada parte.
 - Funciona no computador e no celular, com tema claro e escuro conforme o sistema.
 
@@ -67,6 +71,8 @@ Por isso:
 - cada navegador e cada aparelho tem os seus próprios dados;
 - limpar os dados do navegador apaga o saldo e o histórico;
 - abrir o arquivo direto do computador e abrir pelo GitHub Pages são endereços diferentes, então os dados não são compartilhados entre eles.
+
+Para não perder nada, use **Ajustes → Baixar backup** de vez em quando. O arquivo `.json` baixado pode ser carregado em **Ajustes → Restaurar backup** em qualquer navegador ou aparelho.
 
 ## Rodar no computador
 

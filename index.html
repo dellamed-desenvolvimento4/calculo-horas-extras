@@ -120,6 +120,14 @@
   .data-escolha { display: flex; align-items: center; gap: 8px; }
   .data-escolha input { width: auto; }
 
+  .feriado-aviso {
+    margin: 0 20px 14px; padding: 12px 14px; border-radius: var(--raio-p); background: var(--fora-suave);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; font-size: 15px;
+  }
+  .feriado-aviso p { max-width: 60ch; }
+  .feriado-aviso b { color: var(--fora); }
+  @media (max-width: 520px) { .feriado-aviso { margin: 0 14px 14px; } }
+
   /* régua do dia */
   .regua-box { padding: 4px 20px 18px; border-bottom: 1px solid var(--linha); }
   .regua-area { position: relative; padding-top: 22px; }
@@ -222,7 +230,16 @@
 
   /* ---------- histórico ---------- */
   .historico { margin-top: 32px; }
-  .historico h2 { font-size: 21px; font-weight: 700; margin-bottom: 4px; }
+  .historico h2 { font-size: 21px; font-weight: 700; }
+  .hist-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 14px; }
+  .hist-topo select { width: auto; min-width: 200px; }
+  .resumo-mes { background: var(--folha); border: 1px solid var(--linha); border-radius: var(--raio); padding: 16px 18px; margin-bottom: 16px; }
+  .resumo-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 600px) { .resumo-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .resumo-item span { display: block; font-size: 13px; color: var(--grafite); font-weight: 600; }
+  .resumo-item b { display: block; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  .resumo-item small { display: block; font-size: 12px; color: var(--grafite); }
+  .resumo-saldo { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--linha); font-size: 15px; }
   .historico .sub { color: var(--grafite); font-size: 14px; margin-bottom: 12px; }
   .scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 15px; }
@@ -273,6 +290,9 @@
   .semana td, .semana th { padding: 8px 6px; }
   .aj-aviso { font-size: 14px; color: var(--credito); font-weight: 600; margin-top: 8px; }
   .aj-aviso:empty { display: none; }
+  .aj-aviso.erro { color: var(--debito); }
+  .backup-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opcao input[type=checkbox] { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--primaria); flex: 0 0 auto; }
 
   .guia { max-width: 64ch; }
   .guia ol, .guia ul { padding-left: 22px; margin: 8px 0 0; }
@@ -281,7 +301,12 @@
   .guia dt { font-weight: 700; margin-top: 12px; }
   .guia dd { margin: 2px 0 0; color: var(--grafite); }
   .exemplo { background: var(--campo); border-radius: var(--raio-p); padding: 12px 14px; margin-top: 10px; font-size: 15px; }
-  .exemplo p + p { margin-top: 4px; }
+  .exemplo p + p, .exemplo ul + p { margin-top: 8px; }
+  .exemplo ul { margin: 4px 0 0; }
+  .exemplo li { margin: 2px 0; }
+  .ex-tit { font-weight: 700; font-size: 14px; }
+  .guia h4 { font-size: 15px; font-weight: 700; margin: 18px 0 4px; }
+  .guia section > p + p { margin-top: 8px; }
 
   @media (max-width: 520px) {
     .dia-topo, .regua-box, .batidas, .resultado { padding-left: 14px; padding-right: 14px; }
@@ -344,6 +369,11 @@
         <button class="btn-texto" type="button" id="btnHoje">Hoje</button>
         <input type="date" id="diaData" aria-label="Escolher a data">
       </div>
+    </div>
+
+    <div class="feriado-aviso" id="feriadoAviso" hidden>
+      <p id="feriadoTexto"></p>
+      <button class="btn" type="button" id="btnLancarFeriado">Lançar feriado</button>
     </div>
 
     <div class="regua-box">
@@ -429,7 +459,19 @@
 
   <!-- Histórico -->
   <section class="historico" aria-labelledby="histTitulo">
-    <h2 id="histTitulo">Dias lançados</h2>
+    <div class="hist-topo">
+      <h2 id="histTitulo">Dias lançados</h2>
+      <select id="histMes" aria-label="Escolher o mês"></select>
+    </div>
+    <div class="resumo-mes" id="resumoMes" hidden>
+      <div class="resumo-grade">
+        <div class="resumo-item"><span>Hora extra</span><b class="pos-t" id="rmExtra"></b></div>
+        <div class="resumo-item"><span>Descontos</span><b class="neg-t" id="rmDesc"></b></div>
+        <div class="resumo-item"><span>Folgas</span><b id="rmFolgas"></b><small id="rmFolgasH"></small></div>
+        <div class="resumo-item"><span>Resultado</span><b id="rmTotal"></b></div>
+      </div>
+      <p class="resumo-saldo" id="rmSaldo"></p>
+    </div>
     <p class="sub">O saldo mostrado em cada linha é o saldo depois daquele dia.</p>
     <div class="scroll">
       <table>
@@ -496,6 +538,26 @@
           </table>
         </div>
       </section>
+
+      <section>
+        <h3>Feriados nacionais</h3>
+        <label class="opcao">
+          <input type="checkbox" id="cfgFeriados">
+          <span><b>Avisar nos feriados nacionais</b><span>No dia do feriado, o site sugere lançar como folga sem desconto. Carnaval e Corpus Christi aparecem como ponto facultativo, para você confirmar se a empresa folga.</span></span>
+        </label>
+      </section>
+
+      <section>
+        <h3>Backup dos dados</h3>
+        <p class="ajuda">Seus dados ficam só neste navegador. Baixe um backup de vez em quando, e use-o para levar os dados para outro navegador, outro computador ou o celular.</p>
+        <div class="backup-acoes">
+          <button class="btn" type="button" id="btnExportar">Baixar backup</button>
+          <button class="btn" type="button" id="btnImportar">Restaurar backup</button>
+          <input type="file" id="arqBackup" accept=".json,application/json" hidden>
+        </div>
+        <p class="ajuda" id="infoBackup" style="margin:10px 0 0"></p>
+        <p class="aj-aviso" id="backupAviso" role="status"></p>
+      </section>
     </div>
     <div class="dlg-rodape">
       <button class="btn primario" value="ok">Pronto</button>
@@ -542,6 +604,12 @@
           <dd>Clique em <b>Lançar como dia normal</b>. Não precisa preencher nada: o dia entra com o horário padrão, sem hora extra nem desconto.</dd>
           <dt>Não vou trabalhar (folga, feriado, atestado, férias)</dt>
           <dd>Clique em <b>Lançar folga</b> e escolha o tipo. <b>Folga usando o banco de horas</b> desconta do saldo a jornada do dia. <b>Folga sem desconto</b> é para feriado, atestado, férias ou folga dada pela empresa, e não muda o saldo. Para vários dias seguidos, escolha a data final: só os dias de trabalho entram.</dd>
+          <dt>Feriado</dt>
+          <dd>Nos feriados nacionais, aparece um aviso no topo do dia com o botão <b>Lançar feriado</b>, que lança folga sem desconto. Carnaval e Corpus Christi aparecem como ponto facultativo: lance como feriado só se a empresa deu folga. Feriados estaduais e municipais você lança em <b>Lançar folga</b>, como folga sem desconto.</dd>
+          <dt>Cliquei em lançar sem querer</dt>
+          <dd>Logo depois de lançar, salvar, lançar folga ou excluir, a mensagem verde mostra o botão <b>Desfazer</b> por 20 segundos. Ele volta tudo como estava antes.</dd>
+          <dt>Quero ver como foi o mês</dt>
+          <dd>Em <b>Dias lançados</b>, escolha o mês. O resumo mostra a hora extra, os descontos, as folgas, o resultado do mês e como o saldo começou e terminou.</dd>
           <dt>Quero usar horas do banco</dt>
           <dd>Preencha a entrada (e o almoço, se for voltar). Em <b>Horários de saída</b>, a linha <b>Usa todo o saldo</b> diz a que horas sair.</dd>
           <dt>Saí no meio do expediente e voltei</dt>
@@ -556,19 +624,50 @@
       </section>
 
       <section>
-        <h3>Como a tolerância por batida funciona</h3>
-        <p>Cada batida é comparada com o horário padrão. Até 5 minutos de diferença não conta; passou disso, conta a diferença inteira daquela batida.</p>
+        <h3>Como a tolerância funciona</h3>
+        <p>A tolerância é uma margem de alguns minutos para pequenas diferenças no ponto. Dentro dela, nada conta. Quando passa, conta a diferença <b>inteira</b>, não só o que passou da margem.</p>
+        <p>Existem duas regras. Você escolhe a sua em <b>Ajustes</b>, e as duas vêm com 5 minutos.</p>
+
+        <h4>Por batida (padrão, igual ao sistema da empresa)</h4>
+        <p>Cada batida é comparada com o seu horário padrão, uma por uma: entrada, saída para almoço, volta do almoço e saída. Se uma batida ficou até 5 min diferente, ela não conta. Se passou de 5 min, conta a diferença toda daquela batida.</p>
         <div class="exemplo">
-          <p>Horário padrão: 07:00 às 17:00.</p>
-          <p>Entrada às 06:53: 7 min antes, passou da tolerância, conta <b class="pos-t">+7 min</b>.</p>
-          <p>Saída às 17:02: 2 min depois, dentro da tolerância, não conta.</p>
+          <p class="ex-tit">Exemplo: padrão das 07:00 às 17:00, almoço das 11:45 às 12:45</p>
+          <ul>
+            <li>Entrada às 06:53: 7 min antes. Passou de 5, conta <b class="pos-t">+7 min</b>.</li>
+            <li>Almoço às 11:45 e volta às 12:45: no horário, não conta.</li>
+            <li>Saída às 17:02: 2 min depois. Dentro dos 5, não conta.</li>
+          </ul>
           <p>Resultado do dia: <b class="pos-t">+7 min</b> de hora extra.</p>
         </div>
+
+        <h4>Pelo total do dia</h4>
+        <p>As batidas não são olhadas uma por uma. O site soma tudo o que você trabalhou no dia e compara com a jornada. Se a diferença total ficou até 5 min, para mais ou para menos, não conta. Se passou de 5 min, conta a diferença toda.</p>
+        <div class="exemplo">
+          <p class="ex-tit">Mesmo dia do exemplo anterior</p>
+          <ul>
+            <li>Trabalhado: 9h09. Jornada: 9h. Diferença: 9 min a mais.</li>
+            <li>Passou de 5, então conta tudo: <b class="pos-t">+9 min</b>.</li>
+          </ul>
+          <p class="ex-tit">Outro dia: entrada às 06:57 e saída às 17:02</p>
+          <ul>
+            <li>Trabalhado: 9h05. Diferença: 5 min a mais.</li>
+            <li>Dentro dos 5, não conta: resultado <b>0</b>.</li>
+          </ul>
+        </div>
+
+        <h4>O que vale nas duas regras</h4>
+        <ul>
+          <li>Funciona igual para menos: sair mais cedo ou chegar atrasado além da tolerância gera desconto.</li>
+          <li>Saídas no meio do expediente sempre contam o tempo fora inteiro, sem tolerância.</li>
+          <li>Na regra por batida, abra <b>Como cada batida contou</b>, abaixo do resultado do dia, para ver o que entrou na conta.</li>
+          <li>Se mudar a regra ou os minutos, os dias já lançados são recalculados e o saldo é corrigido.</li>
+        </ul>
       </section>
 
       <section>
-        <h3>Onde ficam seus dados</h3>
-        <p>Tudo fica salvo apenas neste navegador, neste aparelho. Se abrir o site em outro navegador ou no celular, ele começa vazio por lá.</p>
+        <h3>Onde ficam seus dados e como fazer backup</h3>
+        <p>Tudo fica salvo apenas neste navegador, neste aparelho. Se abrir o site em outro navegador ou no celular, ele começa vazio por lá. Limpar os dados do navegador também apaga tudo.</p>
+        <p>Por isso, de vez em quando, abra <b>Ajustes</b> e clique em <b>Baixar backup</b>. É salvo um arquivo com o seu saldo, os dias lançados e os seus ajustes. Para levar os dados para outro navegador ou aparelho, abra o site lá, vá em <b>Ajustes</b> e clique em <b>Restaurar backup</b>.</p>
       </section>
     </div>
     <div class="dlg-rodape">
@@ -880,6 +979,38 @@
     return isoDe(dt);
   }
 
+  // ---------- feriados nacionais ----------
+  function pascoa(y) { // algoritmo de Meeus/Jones/Butcher
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+    const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, mes - 1, dia);
+  }
+  const cacheFeriados = {};
+  function feriadosDoAno(y) {
+    if (cacheFeriados[y]) return cacheFeriados[y];
+    const f = {};
+    const fixo = (md, nome) => { f[`${y}-${md}`] = { nome, facultativo: false }; };
+    fixo('01-01', 'Confraternização Universal');
+    fixo('04-21', 'Tiradentes');
+    fixo('05-01', 'Dia do Trabalho');
+    fixo('09-07', 'Independência do Brasil');
+    fixo('10-12', 'Nossa Senhora Aparecida');
+    fixo('11-02', 'Finados');
+    fixo('11-15', 'Proclamação da República');
+    if (y >= 2024) fixo('11-20', 'Dia da Consciência Negra');
+    fixo('12-25', 'Natal');
+    const p = pascoa(y);
+    const movel = (n, nome, facultativo) => { const d = new Date(p); d.setDate(d.getDate() + n); f[isoDe(d)] = { nome, facultativo }; };
+    movel(-48, 'Carnaval', true);
+    movel(-47, 'Carnaval', true);
+    movel(-2, 'Sexta-feira Santa', false);
+    movel(60, 'Corpus Christi', true);
+    return (cacheFeriados[y] = f);
+  }
+  const feriadoEm = iso => (st.feriados === false || !iso) ? null : feriadosDoAno(+iso.slice(0, 4))[iso] || null;
+
   // Próximo dia útil depois de iso que ainda não foi lançado
   function proximoPendente(iso) {
     let d = proximoDiaUtil(iso);
@@ -965,7 +1096,71 @@
     $('cfgTol').value = tolAtual();
     $('cfgSinal').value = st.saldo < 0 ? '-1' : '1';
     $('cfgSaldo').value = dur(st.saldo);
+    $('cfgFeriados').checked = st.feriados !== false;
+    $('infoBackup').textContent = st.ultimoBackup
+      ? `Último backup baixado em ${fmtData(st.ultimoBackup)}.`
+      : 'Você ainda não baixou nenhum backup.';
   }
+
+  // ---------- backup ----------
+  function exportarBackup() {
+    st.ultimoBackup = hoje();
+    salvar();
+    const conteudo = JSON.stringify({ app: 'banco-de-horas', versao: 1, exportadoEm: new Date().toISOString(), dados: st }, null, 2);
+    const url = URL.createObjectURL(new Blob([conteudo], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `banco-de-horas-backup-${hoje()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    preencherAjustes();
+    const el = $('backupAviso');
+    el.classList.remove('erro');
+    el.textContent = `Backup baixado: ${a.download}. Guarde esse arquivo em um lugar seguro.`;
+  }
+  function importarBackup(texto) {
+    const el = $('backupAviso');
+    let dados;
+    try {
+      const obj = JSON.parse(texto);
+      dados = obj && obj.dados ? obj.dados : obj;
+      if (!dados || !Array.isArray(dados.historico) || typeof dados.saldo !== 'number') throw new Error();
+    } catch {
+      el.classList.add('erro');
+      el.textContent = 'Esse arquivo não é um backup do Banco de horas. Escolha o arquivo .json baixado em Baixar backup.';
+      return;
+    }
+    const n = dados.historico.length;
+    if (!confirm(`Restaurar este backup? Ele tem ${n} ${n === 1 ? 'dia lançado' : 'dias lançados'} e saldo de ${descSaldo(dados.saldo)}. Os dados atuais deste navegador serão substituídos.`)) return;
+    st = Object.assign(padrao(), dados);
+    if (!Array.isArray(st.semana) || st.semana.length !== 7) st.semana = semanaPadrao();
+    salvar();
+    preencherAjustes();
+    renderSemana();
+    editando = null;
+    $('diaData').value = hoje();
+    limparCampos();
+    sincronizarData();
+    renderTudo();
+    el.classList.remove('erro');
+    el.textContent = `Backup restaurado: ${n} ${n === 1 ? 'dia lançado' : 'dias lançados'}, saldo de ${descSaldo(st.saldo)}.`;
+  }
+  $('btnExportar').addEventListener('click', exportarBackup);
+  $('btnImportar').addEventListener('click', () => { $('arqBackup').value = ''; $('arqBackup').click(); });
+  $('arqBackup').addEventListener('change', () => {
+    const arq = $('arqBackup').files[0];
+    if (!arq) return;
+    const leitor = new FileReader();
+    leitor.onload = () => importarBackup(String(leitor.result));
+    leitor.readAsText(arq);
+  });
+  $('cfgFeriados').addEventListener('change', () => {
+    st.feriados = $('cfgFeriados').checked;
+    salvar();
+    renderDia();
+  });
 
   function renderSemana() {
     $('semanaBody').innerHTML = ORDEM.map(i => {
@@ -1101,6 +1296,14 @@
       ? `Jornada de ${curto(esperado)}: ${cfg.entrada} às ${alm ? `${cfg.almIni} e ${cfg.almFim} às ` : ''}${cfg.saida}`
       : 'Dia sem expediente. Se trabalhar, tudo conta como hora extra.';
     $('btnHoje').hidden = data === hoje();
+    // aviso de feriado nacional (só em dia de trabalho ainda não lançado)
+    const fer = feriadoEm(data);
+    $('feriadoAviso').hidden = !(fer && cfg.trabalha && !lancado);
+    if (fer) {
+      $('feriadoTexto').innerHTML = fer.facultativo
+        ? `<b>${fer.nome}</b> é ponto facultativo. Se a empresa deu folga, lance como feriado; se trabalhou, preencha as batidas normalmente.`
+        : `<b>Feriado nacional: ${fer.nome}.</b> Se não trabalhou, lance como feriado. O saldo não muda.`;
+    }
     document.querySelectorAll('[data-pd]').forEach(el => {
       const v = cfg[el.dataset.pd];
       el.textContent = cfg.trabalha && v ? `Padrão ${v}` : '';
@@ -1262,15 +1465,58 @@
     return t;
   }
 
+  // Mês escolhido no filtro ('' = todos). Começa no mês atual.
+  let mesFiltro = null;
+  const nomeMes = ym => { const [y, m] = ym.split('-').map(Number); const t = MESES[m - 1]; return `${t[0].toUpperCase()}${t.slice(1)} de ${y}`; };
+
   function renderHistorico() {
     const lista = [...st.historico].sort((a, b) => a.data.localeCompare(b.data));
     let acumulado = st.saldo;
-    const linhas = [];
+    const todas = [];
     for (let i = lista.length - 1; i >= 0; i--) {
-      linhas.push({ ...lista[i], saldoApos: acumulado });
+      todas.push({ ...lista[i], saldoApos: acumulado });
       acumulado -= lista[i].conta;
     }
+
+    // filtro por mês
+    const mesAtual = hoje().slice(0, 7);
+    const meses = [...new Set([mesAtual, ...todas.map(h => h.data.slice(0, 7))])].sort().reverse();
+    if (mesFiltro === null) mesFiltro = mesAtual;
+    if (mesFiltro && !meses.includes(mesFiltro)) mesFiltro = mesAtual;
+    $('histMes').innerHTML = meses.map(m => `<option value="${m}">${nomeMes(m)}</option>`).join('')
+      + '<option value="">Todos os meses</option>';
+    $('histMes').value = mesFiltro;
+    const linhas = mesFiltro ? todas.filter(h => h.data.startsWith(mesFiltro)) : todas;
+
+    // resumo do período
+    const periodo = mesFiltro ? nomeMes(mesFiltro).toLowerCase() : 'todos os meses';
+    $('resumoMes').hidden = !linhas.length;
+    if (linhas.length) {
+      const trab = linhas.filter(h => !h.folga);
+      const extra = trab.filter(h => h.conta > 0).reduce((s, h) => s + h.conta, 0);
+      const desc = trab.filter(h => h.conta < 0).reduce((s, h) => s + h.conta, 0);
+      const folgas = linhas.filter(h => h.folga);
+      const folgaBanco = folgas.reduce((s, h) => s + h.conta, 0);
+      const total = linhas.reduce((s, h) => s + h.conta, 0);
+      const mais = linhas[0], menos = linhas[linhas.length - 1];
+      const fim = mais.saldoApos, ini = menos.saldoApos - menos.conta;
+      $('rmExtra').textContent = extra ? sinal(extra) : '0';
+      $('rmExtra').className = extra ? 'pos-t' : '';
+      $('rmDesc').textContent = desc ? sinal(desc) : '0';
+      $('rmDesc').className = desc ? 'neg-t' : '';
+      $('rmFolgas').textContent = folgas.length === 1 ? '1 dia' : `${folgas.length} dias`;
+      $('rmFolgasH').textContent = folgaBanco ? `${sinal(folgaBanco)} do banco` : folgas.length ? 'sem desconto' : '';
+      const t = $('rmTotal');
+      t.textContent = total ? sinal(total) : '0';
+      t.className = total > 0 ? 'pos-t' : total < 0 ? 'neg-t' : '';
+      $('rmSaldo').innerHTML = `Em ${periodo}: ${linhas.length} ${linhas.length === 1 ? 'dia lançado' : 'dias lançados'}. `
+        + `O saldo foi de <b>${descSaldo(ini)}</b> para <b>${descSaldo(fim)}</b>.`;
+    }
+
     $('histVazio').hidden = linhas.length > 0;
+    $('histVazio').textContent = todas.length
+      ? `Nenhum dia lançado em ${periodo}.`
+      : 'Nenhum dia lançado ainda. Preencha as batidas e use Lançar dia, ou use Lançar como dia normal.';
     $('histBody').innerHTML = linhas.map(h => {
       const cls = h.conta > 0 ? 'pos-t' : h.conta < 0 ? 'neg-t' : '';
       const aberto = h.data === ($('diaData').value || '');
@@ -1286,11 +1532,45 @@
 
   function renderTudo() { renderSaldo(); renderDia(); renderHistorico(); }
 
+  // ---------- desfazer ----------
+  // Guarda uma foto do estado antes de cada lançamento, para o botão Desfazer
+  let fotoDesfazer = null, timerDesfazer = null;
+  function fotografar() {
+    return {
+      st: JSON.stringify(st), data: $('diaData').value, editando,
+      campos: Object.keys(CAMPOS).map(id => $(id).value),
+      extras: [...document.querySelectorAll('#extras .extra')].map(el => [el.querySelector('[data-x=s]').value, el.querySelector('[data-x=r]').value]),
+    };
+  }
+  function restaurarFoto(f) {
+    st = JSON.parse(f.st);
+    salvar();
+    $('diaData').value = f.data;
+    limparCampos();
+    Object.keys(CAMPOS).forEach((id, i) => $(id).value = f.campos[i]);
+    f.extras.forEach(([s, r]) => adicionarExtra(s, r));
+    editando = f.editando;
+    renderTudo();
+  }
+  // Mostra a mensagem verde; com foto, inclui o botão Desfazer por 20 segundos
+  function avisar(msg, foto) {
+    clearTimeout(timerDesfazer);
+    fotoDesfazer = foto || null;
+    $('aviso').innerHTML = `<span>${esc(msg)}</span>` + (foto ? ` <button type="button" class="btn-texto" id="btnDesfazerLanc">Desfazer</button>` : '');
+    if (foto) timerDesfazer = setTimeout(() => { const b = $('btnDesfazerLanc'); if (b) b.remove(); fotoDesfazer = null; }, 20000);
+  }
+  $('aviso').addEventListener('click', e => {
+    if (e.target.id !== 'btnDesfazerLanc' || !fotoDesfazer) return;
+    restaurarFoto(fotoDesfazer);
+    avisar('Pronto, o último lançamento foi desfeito.');
+  });
+
   // ---------- ações ----------
   function lancar(item) {
     const existente = st.historico.find(h => h.data === item.data);
     const edicao = !!existente && editando === item.data;
     if (existente && !edicao && !confirm(`O dia ${fmtData(item.data)} já foi lançado. Substituir pelo novo?`)) return;
+    const foto = fotografar();
     if (existente) {
       st.saldo -= existente.conta;
       st.historico = st.historico.filter(h => h !== existente);
@@ -1308,13 +1588,41 @@
     renderTudo();
     if (edicao) {
       const mudou = item.conta - existente.conta;
-      $('aviso').textContent = `Alterações de ${ABREV[diaSemana(item.data)].toLowerCase()}, ${fmtData(item.data)} salvas: antes ${txt(existente)}, agora ${txt(item)}.`
+      avisar(`Alterações de ${ABREV[diaSemana(item.data)].toLowerCase()}, ${fmtData(item.data)} salvas: antes ${txt(existente)}, agora ${txt(item)}.`
         + (mudou ? ` O saldo mudou ${sinal(mudou)}.` : ' O saldo não mudou.')
-        + ` Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`;
+        + ` Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`, foto);
       return;
     }
     const oque = item.normal ? 'lançado como dia normal' : `lançado (${item.conta === 0 ? '0' : sinal(item.conta)})`;
-    $('aviso').textContent = `${ABREV[diaSemana(item.data)]} ${fmtData(item.data)} ${oque}. Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`;
+    avisar(`${ABREV[diaSemana(item.data)]} ${fmtData(item.data)} ${oque}. Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`, foto);
+  }
+
+  // Lança folga em um ou mais dias e volta para a sequência
+  function lancarFolgas(dias, tipo, motivo) {
+    const foto = fotografar();
+    let total = 0;
+    dias.forEach(d => {
+      const existente = st.historico.find(h => h.data === d);
+      if (existente) {
+        st.saldo -= existente.conta;
+        st.historico = st.historico.filter(h => h !== existente);
+      }
+      const conta = tipo === 'banco' ? -esperadoDia(st.semana[diaSemana(d)]) : 0;
+      st.historico.push({ data: d, folga: tipo, motivo, conta });
+      st.saldo += conta;
+      total += conta;
+    });
+    salvar();
+    const ultimo = dias[dias.length - 1];
+    const prox = proximoPendente(ultimo);
+    $('diaData').value = prox;
+    editando = null;
+    limparCampos();
+    sincronizarData();
+    renderTudo();
+    const quais = dias.length === 1 ? `${ABREV[diaSemana(dias[0])].toLowerCase()}, ${fmtData(dias[0])}` : `${dias.length} dias (${fmtData(dias[0])} a ${fmtData(ultimo)})`;
+    const oque = motivo && tipo === 'abonada' && dias.length === 1 ? `${motivo} lançado` : 'Folga lançada';
+    avisar(`${oque} em ${quais}${total ? `: ${sinal(total)} no saldo` : ', sem mudar o saldo'}. Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`, foto);
   }
 
   $('btnRegistrar').addEventListener('click', () => {
@@ -1390,31 +1698,17 @@
   $('btnConfirmarFolga').addEventListener('click', () => {
     const dias = diasDaFolga();
     if (!dias || !dias.length) return;
-    const tipo = tipoFolga(), motivo = $('folgaMotivo').value.trim();
-    let total = 0;
-    dias.forEach(d => {
-      const existente = st.historico.find(h => h.data === d);
-      if (existente) {
-        st.saldo -= existente.conta;
-        st.historico = st.historico.filter(h => h !== existente);
-      }
-      const conta = tipo === 'banco' ? -esperadoDia(st.semana[diaSemana(d)]) : 0;
-      st.historico.push({ data: d, folga: tipo, motivo, conta });
-      st.saldo += conta;
-      total += conta;
-    });
-    salvar();
     $('dlgFolga').close();
-    const ultimo = dias[dias.length - 1];
-    const prox = proximoPendente(ultimo);
-    $('diaData').value = prox;
-    editando = null;
-    limparCampos();
-    sincronizarData();
-    renderTudo();
-    const quais = dias.length === 1 ? `${ABREV[diaSemana(dias[0])].toLowerCase()}, ${fmtData(dias[0])}` : `${dias.length} dias (${fmtData(dias[0])} a ${fmtData(ultimo)})`;
-    $('aviso').textContent = `Folga lançada em ${quais}${total ? `: ${sinal(total)} no saldo` : ', sem mudar o saldo'}. Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`;
+    lancarFolgas(dias, tipoFolga(), $('folgaMotivo').value.trim());
   });
+
+  $('btnLancarFeriado').addEventListener('click', () => {
+    const data = $('diaData').value;
+    const fer = feriadoEm(data);
+    if (fer) lancarFolgas([data], 'abonada', fer.nome);
+  });
+
+  $('histMes').addEventListener('change', () => { mesFiltro = $('histMes').value; renderHistorico(); });
 
   $('histBody').addEventListener('click', e => {
     const ed = e.target.closest('button.editar');
@@ -1430,6 +1724,7 @@
     if (!item) return;
     const ajuste = item.conta === 0 ? 'O saldo não muda.' : `O saldo muda ${sinal(-item.conta)}.`;
     if (!confirm(`Excluir o lançamento de ${fmtData(item.data)}? ${ajuste}`)) return;
+    const foto = fotografar();
     st.saldo -= item.conta;
     st.historico = st.historico.filter(h => h !== item);
     salvar();
@@ -1437,7 +1732,7 @@
     carregarLancamento(item);
     editando = null;
     renderTudo();
-    $('aviso').textContent = `Lançamento de ${fmtData(item.data)} excluído. As batidas voltaram para os campos para você corrigir.`;
+    avisar(`Lançamento de ${fmtData(item.data)} excluído. As batidas voltaram para os campos para você corrigir.`, foto);
     $('diaCard').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   });
 
