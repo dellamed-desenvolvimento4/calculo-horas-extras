@@ -8,7 +8,6 @@ Você preenche a entrada, o almoço e a saída. O site mostra na hora:
 - como fica o seu saldo;
 - a que horas sair para fechar a jornada, para não mexer no saldo ou para usar as horas do banco.
 
-
 ---
 
 ## Funcionalidades
@@ -23,6 +22,9 @@ Você preenche a entrada, o almoço e a saída. O site mostra na hora:
   - *Pelo total do dia*: se a diferença do dia ficar dentro da tolerância, não conta; passou, conta tudo.
 - **Horário de trabalho por dia da semana**, com dias de folga. Trabalho em dia de folga conta todo como hora extra.
 - **Lançar como dia normal**: lança o dia com o horário padrão, sem hora extra nem desconto, em um clique.
+- **Lançar folga**, de um dia ou de vários dias seguidos, com motivo opcional:
+  - *Folga usando o banco de horas*: desconta do saldo a jornada de cada dia.
+  - *Folga sem desconto*: feriado, atestado, férias ou folga dada pela empresa. O saldo não muda.
 - **Dias lançados**: histórico com o resultado e o saldo depois de cada dia. Dá para **editar** ou **excluir** qualquer dia, e o saldo é corrigido sozinho.
 - **Sequência automática**: depois de lançar ou editar, o site vai para o próximo dia útil ainda não lançado.
 - **Como usar**: guia dentro do próprio site explicando cada parte.

@@ -238,6 +238,10 @@
   .editar { border: none; background: none; color: var(--primaria); cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 6px; border-radius: 6px; }
   .editar:hover { text-decoration: underline; }
   tr.editando td { background: var(--primaria-suave); }
+  .normal-tag.folga-tag { background: var(--fora-suave); color: var(--fora); }
+  .folga-resumo { font-weight: 600; padding: 4px 0 14px; }
+  .folga-resumo.erro { color: var(--debito); }
+  .dlg-rodape .btn + .btn { margin-left: 8px; }
   .res-edicao { font-size: 13px; font-weight: 700; color: var(--primaria); margin-bottom: 6px; }
 
   /* ---------- janelas ---------- */
@@ -415,6 +419,7 @@
           <p class="lancar-nota" id="lancarNota"></p>
           <button class="btn primario" type="button" id="btnRegistrar">Lançar dia</button>
           <button class="btn" type="button" id="btnNormal">Lançar como dia normal</button>
+          <button class="btn" type="button" id="btnFolga">Lançar folga</button>
           <button class="btn-texto" type="button" id="btnDesfazer" hidden>Desfazer mudanças</button>
           <p class="aviso" id="aviso" role="status"></p>
         </div>
@@ -535,6 +540,8 @@
         <dl>
           <dt>Um dia normal, sem nada diferente</dt>
           <dd>Clique em <b>Lançar como dia normal</b>. Não precisa preencher nada: o dia entra com o horário padrão, sem hora extra nem desconto.</dd>
+          <dt>Não vou trabalhar (folga, feriado, atestado, férias)</dt>
+          <dd>Clique em <b>Lançar folga</b> e escolha o tipo. <b>Folga usando o banco de horas</b> desconta do saldo a jornada do dia. <b>Folga sem desconto</b> é para feriado, atestado, férias ou folga dada pela empresa, e não muda o saldo. Para vários dias seguidos, escolha a data final: só os dias de trabalho entram.</dd>
           <dt>Quero usar horas do banco</dt>
           <dd>Preencha a entrada (e o almoço, se for voltar). Em <b>Horários de saída</b>, a linha <b>Usa todo o saldo</b> diz a que horas sair.</dd>
           <dt>Saí no meio do expediente e voltei</dt>
@@ -566,6 +573,46 @@
     </div>
     <div class="dlg-rodape">
       <button class="btn primario" value="ok">Entendi</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Folga -->
+<dialog id="dlgFolga" aria-labelledby="folgaTitulo">
+  <form method="dialog" id="formFolga">
+    <div class="dlg-topo">
+      <h2 id="folgaTitulo">Lançar folga</h2>
+      <button class="icone" value="fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="dlg-corpo">
+      <section>
+        <h3>Que tipo de folga?</h3>
+        <div class="opcoes" role="radiogroup" aria-label="Tipo de folga">
+          <label class="opcao">
+            <input type="radio" name="tipoFolga" value="banco" checked>
+            <span><b>Folga usando o banco de horas</b><span id="folgaBancoDesc">Desconta do saldo a jornada do dia.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="tipoFolga" value="abonada">
+            <span><b>Folga sem desconto</b><span>Feriado, atestado, férias ou folga dada pela empresa. O saldo não muda.</span></span>
+          </label>
+        </div>
+      </section>
+      <section>
+        <h3>Quais dias?</h3>
+        <div class="linha">
+          <div><label class="rot" for="folgaDe">De</label><input type="date" id="folgaDe"></div>
+          <div><label class="rot" for="folgaAte">Até</label><input type="date" id="folgaAte"></div>
+        </div>
+        <p class="ajuda" style="margin:6px 0 14px">Para um dia só, deixe as duas datas iguais. Em vários dias, como férias, só os dias de trabalho entram.</p>
+        <label class="rot" for="folgaMotivo">Motivo (opcional)</label>
+        <input type="text" id="folgaMotivo" maxlength="40" placeholder="Ex.: feriado, consulta, férias">
+      </section>
+      <p class="folga-resumo" id="folgaResumo" role="status"></p>
+    </div>
+    <div class="dlg-rodape">
+      <button class="btn" value="fechar">Cancelar</button>
+      <button class="btn primario" type="button" id="btnConfirmarFolga">Lançar folga</button>
     </div>
   </form>
 </dialog>
@@ -612,6 +659,7 @@
     const ano = dt.getFullYear() !== new Date().getFullYear() ? ` de ${dt.getFullYear()}` : '';
     return `${DIAS[dt.getDay()]}, ${dt.getDate()} de ${MESES[dt.getMonth()]}${ano}`;
   };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
   const ler = k => { try { return localStorage.getItem(k); } catch { return null; } };
 
@@ -802,7 +850,7 @@
   function recalcularHistorico() {
     let delta = 0;
     st.historico.forEach(h => {
-      if (h.normal) return;
+      if (h.normal || h.folga) return;
       const cfg = st.semana[diaSemana(h.data)];
       const an = analisar(paraCalculo(dadosDeLancamento(h)), cfg);
       if (an.vazio || an.erro || an.fim == null) return;
@@ -1032,9 +1080,10 @@
     const emEdicao = !!lancado && editando === data;
     // saldo sem o efeito deste dia (se ele já foi lançado, não conta duas vezes)
     const base = st.saldo - (lancado ? lancado.conta : 0);
-    const resAtual = lancado ? (lancado.normal ? 'dia normal' : lancado.conta === 0 ? '0' : sinal(lancado.conta)) : '';
+    const resAtual = lancado ? textoResultado(lancado) : '';
     $('btnRegistrar').textContent = emEdicao ? 'Salvar alterações' : 'Lançar dia';
     $('btnNormal').textContent = emEdicao ? 'Salvar como dia normal' : 'Lançar como dia normal';
+    $('btnFolga').textContent = emEdicao ? 'Mudar para folga' : 'Lançar folga';
     $('btnDesfazer').hidden = !emEdicao;
     const selo = emEdicao ? `<p class="res-edicao">Editando dia já lançado (resultado salvo: ${resAtual})</p>` : '';
 
@@ -1055,6 +1104,19 @@
     const cartao = $('resCartao');
     $('detalheBox').hidden = true;
     let pronto = false;
+
+    if (an.vazio && emEdicao && lancado.folga) {
+      cartao.className = 'res-cartao alerta';
+      cartao.innerHTML = `<p class="res-rotulo">Dia lançado como folga</p>
+        <p class="res-titulo">${lancado.folga === 'banco' ? `Folga usando o banco: ${sinal(lancado.conta)}` : 'Folga sem desconto'}</p>
+        ${lancado.motivo ? `<p class="res-texto">Motivo: ${esc(lancado.motivo)}</p>` : ''}
+        <p class="res-nota">Se você trabalhou neste dia, preencha as batidas e clique em Salvar alterações.</p>`;
+      $('horariosBox').hidden = true;
+      $('lancarNota').textContent = '';
+      $('btnRegistrar').disabled = true;
+      renderRegua(null, null, cfg);
+      return;
+    }
 
     if (an.vazio) {
       cartao.className = 'res-cartao';
@@ -1173,7 +1235,15 @@
   }
 
   // ---------- render: histórico ----------
+  function textoResultado(h) {
+    if (h.normal) return 'dia normal';
+    if (h.folga === 'abonada') return 'folga sem desconto';
+    if (h.folga) return `folga, ${sinal(h.conta)}`;
+    return h.conta === 0 ? '0' : sinal(h.conta);
+  }
+
   function textoBatidas(h) {
+    if (h.folga) return `<span class="normal-tag folga-tag">Folga</span>${h.folga === 'banco' ? 'usando o banco de horas' : 'sem desconto'}${h.motivo ? `: ${esc(h.motivo)}` : ''}`;
     if (h.normal) return `<span class="normal-tag">Dia normal</span>${h.entrada ? `${h.entrada} às ${h.saida}` : 'folga'}`;
     if (h.batidas) return h.batidas.join(', ');
     let t;
@@ -1220,7 +1290,7 @@
     st.historico.push(item);
     st.saldo += item.conta;
     salvar();
-    const txt = h => h.normal ? 'dia normal' : h.conta === 0 ? '0' : sinal(h.conta);
+    const txt = textoResultado;
     // volta para a sequência: próximo dia útil que ainda não foi lançado
     const prox = proximoPendente(item.data);
     $('diaData').value = prox;
@@ -1264,6 +1334,78 @@
       almFim: cfg.trabalha ? cfg.almFim : '', saida: cfg.trabalha ? cfg.saida : '',
       extras: [], conta: 0,
     });
+  });
+
+  // ---------- folga ----------
+  const tipoFolga = () => document.querySelector('input[name=tipoFolga]:checked').value;
+  function diasDaFolga() {
+    const de = $('folgaDe').value, ate = $('folgaAte').value || de;
+    if (!de || ate < de) return null;
+    const dias = [];
+    for (let d = de, i = 0; d <= ate && i < 370; d = somarDias(d, 1), i++) {
+      if (de === ate || st.semana[diaSemana(d)].trabalha) dias.push(d);
+    }
+    return dias;
+  }
+  function renderFolga() {
+    const jornadas = [...new Set(ORDEM.filter(i => st.semana[i].trabalha).map(i => curto(esperadoDia(st.semana[i]))))];
+    $('folgaBancoDesc').textContent = `Desconta do saldo a jornada de cada dia${jornadas.length ? ` (${jornadas.join(' ou ')})` : ''}.`;
+    const dias = diasDaFolga();
+    const resumo = $('folgaResumo');
+    const ok = dias && dias.length;
+    resumo.classList.toggle('erro', !ok);
+    $('btnConfirmarFolga').disabled = !ok;
+    if (!dias) { resumo.textContent = 'A data final precisa ser igual ou depois da inicial.'; return; }
+    if (!dias.length) { resumo.textContent = 'Não há dias de trabalho nesse período.'; return; }
+    const total = tipoFolga() === 'banco' ? -dias.reduce((s, d) => s + esperadoDia(st.semana[diaSemana(d)]), 0) : 0;
+    const subst = dias.filter(d => st.historico.some(h => h.data === d)).length;
+    const n = dias.length === 1 ? `${ABREV[diaSemana(dias[0])].toLowerCase()}, ${fmtData(dias[0])}` : `${dias.length} dias de trabalho`;
+    resumo.textContent = `Vai lançar folga em ${n}: ${total ? `${sinal(total)} no saldo` : 'o saldo não muda'}.`
+      + (subst ? ` ${subst === 1 ? 'Um dia já lançado será substituído' : `${subst} dias já lançados serão substituídos`}.` : '');
+  }
+  $('btnFolga').addEventListener('click', () => {
+    const data = $('diaData').value || hoje();
+    const atual = st.historico.find(h => h.data === data && h.folga);
+    $('folgaDe').value = data;
+    $('folgaAte').value = data;
+    $('folgaMotivo').value = atual?.motivo || '';
+    const tipo = atual?.folga || 'banco';
+    document.querySelectorAll('input[name=tipoFolga]').forEach(r => r.checked = r.value === tipo);
+    renderFolga();
+    const dlg = $('dlgFolga');
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  });
+  $('formFolga').addEventListener('input', e => {
+    if (e.target.id === 'folgaDe' && $('folgaAte').value < $('folgaDe').value) $('folgaAte').value = $('folgaDe').value;
+    renderFolga();
+  });
+  $('btnConfirmarFolga').addEventListener('click', () => {
+    const dias = diasDaFolga();
+    if (!dias || !dias.length) return;
+    const tipo = tipoFolga(), motivo = $('folgaMotivo').value.trim();
+    let total = 0;
+    dias.forEach(d => {
+      const existente = st.historico.find(h => h.data === d);
+      if (existente) {
+        st.saldo -= existente.conta;
+        st.historico = st.historico.filter(h => h !== existente);
+      }
+      const conta = tipo === 'banco' ? -esperadoDia(st.semana[diaSemana(d)]) : 0;
+      st.historico.push({ data: d, folga: tipo, motivo, conta });
+      st.saldo += conta;
+      total += conta;
+    });
+    salvar();
+    $('dlgFolga').close();
+    const ultimo = dias[dias.length - 1];
+    const prox = proximoPendente(ultimo);
+    $('diaData').value = prox;
+    editando = null;
+    limparCampos();
+    sincronizarData();
+    renderTudo();
+    const quais = dias.length === 1 ? `${ABREV[diaSemana(dias[0])].toLowerCase()}, ${fmtData(dias[0])}` : `${dias.length} dias (${fmtData(dias[0])} a ${fmtData(ultimo)})`;
+    $('aviso').textContent = `Folga lançada em ${quais}${total ? `: ${sinal(total)} no saldo` : ', sem mudar o saldo'}. Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`;
   });
 
   $('histBody').addEventListener('click', e => {
