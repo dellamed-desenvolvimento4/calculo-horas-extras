@@ -8,7 +8,6 @@ Você preenche a entrada, o almoço e a saída. O site mostra na hora:
 - como fica o seu saldo;
 - a que horas sair para fechar a jornada, para não mexer no saldo ou para usar as horas do banco.
 
-**Acesse:** `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`
 
 ---
 
