@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banco de Horas</title>
+<meta name="description" content="Calcule hora extra, desconto e o saldo do seu banco de horas.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%233346D3'/%3E%3Crect x='26' y='7' width='12' height='6' rx='2' fill='white'/%3E%3Ccircle cx='32' cy='36' r='18' fill='none' stroke='white' stroke-width='5'/%3E%3Cpath d='M32 26v10l7 5' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#3346D3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --papel: #EDEFF3;
+    --folha: #FFFFFF;
+    --tinta: #1A2232;
+    --grafite: #5A6476;
+    --linha: #DCE0E7;
+    --campo: #F6F7F9;
+    --primaria: #3346D3;
+    --primaria-forte: #2636B0;
+    --primaria-suave: #E6E9FB;
+    --credito: #11845B;
+    --credito-suave: #E2F4EC;
+    --debito: #C43A29;
+    --debito-suave: #FBE8E5;
+    --almoco: #B9C0CC;
+    --fora: #D98C0F;
+    --fora-suave: #FCF1DC;
+    --raio: 16px;
+    --raio-p: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papel: #141821;
+      --folha: #1C212C;
+      --tinta: #E7EAF0;
+      --grafite: #9AA3B3;
+      --linha: #2C3341;
+      --campo: #232937;
+      --primaria: #7D8CFF;
+      --primaria-forte: #9BA7FF;
+      --primaria-suave: #262D52;
+      --credito: #4CC38F;
+      --credito-suave: #15332A;
+      --debito: #FF8B7B;
+      --debito-suave: #3B1E1A;
+      --almoco: #4A5263;
+      --fora: #F0B24A;
+      --fora-suave: #3A2E15;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--papel);
+    color: var(--tinta);
+    font: 400 16px/1.55 "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: "tnum" 1;
+  }
+  h1, h2, h3, p { margin: 0; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--primaria); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 16px 56px; }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 42px; padding: 0 16px; border-radius: var(--raio-p); white-space: nowrap;
+    border: 1px solid var(--linha); background: var(--folha); font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--primaria); }
+  .btn.primario { background: var(--primaria); border-color: var(--primaria); color: #fff; }
+  .btn.primario:hover { background: var(--primaria-forte); border-color: var(--primaria-forte); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn:disabled:hover { border-color: var(--linha); }
+  .btn.primario:disabled:hover { background: var(--primaria); border-color: var(--primaria); }
+  .btn-texto {
+    border: none; background: none; padding: 6px 4px; color: var(--primaria); font-weight: 600; cursor: pointer; border-radius: 6px;
+  }
+  .btn-texto:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .icone {
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--linha); background: var(--folha);
+    display: inline-grid; place-items: center; cursor: pointer; font-size: 20px; line-height: 1; flex: 0 0 auto;
+  }
+  .icone:hover { border-color: var(--primaria); color: var(--primaria); }
+
+  /* ---------- topo ---------- */
+  .topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 8px; }
+  .marca { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; white-space: nowrap; }
+  .marca svg { width: 30px; height: 30px; }
+  .topo-acoes { display: flex; gap: 4px; }
+  .topo-acoes .btn { min-height: 38px; padding: 0 14px; }
+  .boas-vindas {
+    background: var(--primaria-suave); border-radius: var(--raio-p); padding: 10px 14px; margin-top: 8px; font-size: 15px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+  }
+  .boas-vindas .fechar { margin-left: auto; }
+
+  /* ---------- saldo (destaque) ---------- */
+  .saldo { padding: 28px 0 24px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 32px; }
+  .saldo-rotulo { color: var(--grafite); font-weight: 600; }
+  .saldo-valor { font-size: clamp(52px, 11vw, 88px); font-weight: 800; line-height: 1; letter-spacing: -0.035em; margin-top: 6px; }
+  .saldo-valor.pos { color: var(--credito); }
+  .saldo-valor.neg { color: var(--debito); }
+  .saldo-desc { font-size: 20px; font-weight: 600; margin-top: 6px; }
+  .saldo-lado { color: var(--grafite); font-size: 14px; max-width: 34ch; }
+  .saldo-lado p + p { margin-top: 4px; }
+
+  /* ---------- dia ---------- */
+  .dia { background: var(--folha); border: 1px solid var(--linha); border-radius: var(--raio); }
+  .dia-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 18px 20px 14px; }
+  .data-nav { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .data-nav h2 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+  .dia-jornada { color: var(--grafite); font-size: 14px; }
+  .data-escolha { display: flex; align-items: center; gap: 8px; }
+  .data-escolha input { width: auto; }
+
+  /* régua do dia */
+  .regua-box { padding: 4px 20px 18px; border-bottom: 1px solid var(--linha); }
+  .regua-area { position: relative; padding-top: 22px; }
+  .regua {
+    position: relative; height: 46px; border-radius: 8px; background: var(--campo); overflow: hidden;
+    border: 1px solid var(--linha);
+  }
+  .regua .tique { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--linha); }
+  .regua .tique.meia { top: auto; height: 8px; }
+  .seg { position: absolute; top: 7px; bottom: 7px; border-radius: 5px; }
+  .seg.trab { background: var(--primaria); }
+  .seg.prev { background: repeating-linear-gradient(-45deg, var(--primaria-suave) 0 5px, transparent 5px 10px); border: 1.5px dashed var(--primaria); }
+  .seg.alm { background: var(--almoco); top: 16px; bottom: 16px; }
+  .seg.fora { background: var(--fora); top: 12px; bottom: 12px; }
+  .seg.fantasma { border: 1.5px dashed var(--almoco); background: transparent; }
+  .agora { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--debito); }
+  .bandeira {
+    position: absolute; top: 0; font-size: 12px; font-weight: 700; white-space: nowrap; color: var(--primaria);
+  }
+  .bandeira.agora-t { color: var(--debito); }
+  .regua-horas { position: relative; height: 18px; font-size: 12px; color: var(--grafite); margin-top: 4px; }
+  .regua-horas span { position: absolute; transform: translateX(-50%); }
+  .legenda { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--grafite); margin-top: 6px; }
+  .legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  .dia-corpo { display: grid; grid-template-columns: 1fr; }
+  @media (min-width: 880px) {
+    .dia-corpo { grid-template-columns: 1.1fr 1fr; }
+    .batidas { border-right: 1px solid var(--linha); }
+  }
+  .batidas, .resultado { padding: 20px; min-width: 0; }
+  .bloco-titulo { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+
+  .batidas-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+  @media (min-width: 560px) and (max-width: 879px) { .batidas-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .batida label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .batida small { display: block; font-size: 12px; color: var(--grafite); margin-top: 4px; }
+  input[type=time], input[type=date], input[type=text], input[type=number], select {
+    width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--linha); border-radius: var(--raio-p);
+    background: var(--campo); font-variant-numeric: tabular-nums;
+  }
+  .batida input { font-size: 19px; font-weight: 600; }
+  input.invalido { border-color: var(--debito); background: var(--debito-suave); }
+  .batidas-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 14px; }
+
+  .saidas { margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--linha); }
+  .saidas-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .saidas-topo h3 { font-size: 16px; font-weight: 700; }
+  .saidas-vazio { font-size: 14px; color: var(--grafite); margin-top: 4px; max-width: 52ch; }
+  .extra { display: grid; grid-template-columns: 28px 1fr 1fr 40px; gap: 4px 10px; align-items: end; margin-top: 12px; }
+  .extra-n {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--fora-suave); color: var(--fora);
+    font-size: 13px; font-weight: 800; display: grid; place-items: center; margin-bottom: 9px;
+  }
+  .extra label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .extra-info { grid-column: 2 / 4; font-size: 13px; color: var(--grafite); }
+  .extra-info.erro { color: var(--debito); }
+  .extra .icone { width: 40px; height: 44px; border-radius: var(--raio-p); font-size: 15px; }
+
+  /* resultado */
+  .resultado { background: transparent; }
+  .res-cartao { border-radius: 14px; padding: 18px; background: var(--campo); }
+  .res-cartao.pos { background: var(--credito-suave); }
+  .res-cartao.neg { background: var(--debito-suave); }
+  .res-cartao.alerta { background: var(--fora-suave); }
+  .res-rotulo { font-size: 14px; color: var(--grafite); font-weight: 600; }
+  .res-grande { font-size: 44px; font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; margin: 4px 0 2px; }
+  .res-cartao.pos .res-grande { color: var(--credito); }
+  .res-cartao.neg .res-grande { color: var(--debito); }
+  .res-titulo { font-size: 20px; font-weight: 700; }
+  .res-cartao.alerta .res-titulo { color: var(--fora); }
+  .res-texto { font-size: 15px; }
+  .res-saldo { margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--grafite) 22%, transparent); font-size: 15px; }
+  .res-nota { font-size: 13px; color: var(--grafite); margin-top: 6px; }
+
+  .detalhe { margin-top: 12px; }
+  .detalhe summary { cursor: pointer; font-weight: 600; font-size: 15px; color: var(--primaria); padding: 6px 0; }
+  .detalhe ul { list-style: none; padding: 0; margin: 6px 0 0; font-size: 14px; }
+  .detalhe li { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 8px 0; border-top: 1px solid var(--linha); }
+  .detalhe li .q { color: var(--grafite); font-size: 13px; }
+  .detalhe li b { grid-row: span 2; align-self: center; text-align: right; }
+  .detalhe li b.ign { font-weight: 500; color: var(--grafite); }
+
+  .horarios-box { margin-top: 18px; }
+  .horarios-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .horarios { list-style: none; padding: 0; margin: 0; }
+  .horarios li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--linha); font-size: 15px; }
+  .horarios li:last-child { border-bottom: none; }
+  .horarios li b { font-size: 17px; text-align: right; white-space: nowrap; }
+  .horarios li small { display: block; font-size: 13px; color: var(--grafite); font-weight: 400; }
+
+  .lancar { margin-top: 18px; display: grid; gap: 10px; }
+  .lancar-nota { font-size: 14px; color: var(--grafite); }
+  .lancar .btn { width: 100%; min-height: 48px; }
+  .aviso { font-size: 14px; color: var(--credito); font-weight: 600; }
+  .aviso:empty { display: none; }
+
+  .pos-t { color: var(--credito); }
+  .neg-t { color: var(--debito); }
+
+  /* ---------- histórico ---------- */
+  .historico { margin-top: 32px; }
+  .historico h2 { font-size: 21px; font-weight: 700; margin-bottom: 4px; }
+  .historico .sub { color: var(--grafite); font-size: 14px; margin-bottom: 12px; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--linha); vertical-align: middle; }
+  th { font-size: 13px; color: var(--grafite); font-weight: 600; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  td.nw { white-space: nowrap; }
+  td.batidas-txt { color: var(--grafite); min-width: 200px; }
+  .normal-tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 99px; background: var(--primaria-suave); color: var(--primaria); margin-right: 6px; }
+  .vazio { color: var(--grafite); padding: 18px 0; }
+  .excluir { border: none; background: none; color: var(--grafite); cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 6px; border-radius: 6px; }
+  .excluir:hover { color: var(--debito); text-decoration: underline; }
+  .editar { border: none; background: none; color: var(--primaria); cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 6px; border-radius: 6px; }
+  .editar:hover { text-decoration: underline; }
+  tr.editando td { background: var(--primaria-suave); }
+  .res-edicao { font-size: 13px; font-weight: 700; color: var(--primaria); margin-bottom: 6px; }
+
+  /* ---------- janelas ---------- */
+  dialog {
+    width: min(680px, calc(100% - 24px)); max-height: calc(100% - 32px); padding: 0; border: none; border-radius: 18px;
+    background: var(--folha); color: var(--tinta); box-shadow: 0 24px 60px rgba(10, 15, 30, .35);
+  }
+  dialog::backdrop { background: rgba(12, 16, 28, .5); }
+  .dlg-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--linha); position: sticky; top: 0; background: var(--folha); z-index: 1; }
+  .dlg-topo h2 { font-size: 21px; font-weight: 700; }
+  .dlg-corpo { padding: 6px 22px 8px; }
+  .dlg-corpo section { padding: 18px 0; }
+  .dlg-corpo section + section { border-top: 1px solid var(--linha); }
+  .dlg-corpo h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .ajuda { color: var(--grafite); font-size: 14px; margin-bottom: 12px; max-width: 60ch; }
+  .dlg-rodape { display: flex; justify-content: flex-end; padding: 14px 22px 20px; border-top: 1px solid var(--linha); }
+  .linha { display: flex; gap: 8px; }
+  .linha > * { flex: 1; }
+  .opcoes { display: grid; gap: 8px; margin-bottom: 14px; }
+  .opcao { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--linha); border-radius: var(--raio-p); cursor: pointer; }
+  .opcao:has(input:checked) { border-color: var(--primaria); background: var(--primaria-suave); }
+  .opcao input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--primaria); }
+  .opcao b { display: block; }
+  .opcao span span { color: var(--grafite); font-size: 14px; }
+  .campo-curto { max-width: 160px; }
+  .campo-curto label, .dlg-corpo label.rot { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .semana td input[type=time] { min-width: 100px; min-height: 38px; padding: 4px 8px; }
+  .semana input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--primaria); }
+  .semana td, .semana th { padding: 8px 6px; }
+  .aj-aviso { font-size: 14px; color: var(--credito); font-weight: 600; margin-top: 8px; }
+  .aj-aviso:empty { display: none; }
+
+  .guia { max-width: 64ch; }
+  .guia ol, .guia ul { padding-left: 22px; margin: 8px 0 0; }
+  .guia li { margin: 6px 0; }
+  .guia dl { margin: 8px 0 0; }
+  .guia dt { font-weight: 700; margin-top: 12px; }
+  .guia dd { margin: 2px 0 0; color: var(--grafite); }
+  .exemplo { background: var(--campo); border-radius: var(--raio-p); padding: 12px 14px; margin-top: 10px; font-size: 15px; }
+  .exemplo p + p { margin-top: 4px; }
+
+  @media (max-width: 520px) {
+    .dia-topo, .regua-box, .batidas, .resultado { padding-left: 14px; padding-right: 14px; }
+    .data-nav h2 { font-size: 18px; }
+    .topo-acoes .btn { padding: 0 10px; font-size: 14px; min-height: 36px; }
+    .marca { font-size: 16px; gap: 8px; }
+    .marca svg { width: 26px; height: 26px; }
+    .res-grande { font-size: 38px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .seg { transition: left .2s ease, width .2s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topo">
+    <div class="marca">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#3346D3"/><rect x="26" y="7" width="12" height="6" rx="2" fill="#fff"/><circle cx="32" cy="36" r="18" fill="none" stroke="#fff" stroke-width="5"/><path d="M32 26v10l7 5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h1 style="font-size:inherit;font-weight:inherit">Banco de horas</h1>
+    </div>
+    <nav class="topo-acoes" aria-label="Menu">
+      <button class="btn" type="button" id="btnGuia">Como usar</button>
+      <button class="btn" type="button" id="btnAjustes">Ajustes</button>
+    </nav>
+  </header>
+
+  <p class="boas-vindas" id="boasVindas" hidden>
+    <span>Primeira vez aqui? Comece colocando o seu saldo atual em Ajustes.</span>
+    <button class="btn-texto" type="button" data-abrir="guia">Ver como usar</button>
+    <button class="btn-texto fechar" type="button" id="fecharBoasVindas">Dispensar</button>
+  </p>
+
+  <!-- Saldo -->
+  <section class="saldo" aria-labelledby="saldoRotulo">
+    <div>
+      <p class="saldo-rotulo" id="saldoRotulo">Seu banco de horas</p>
+      <p class="saldo-valor" id="saldoValor">0 min</p>
+      <p class="saldo-desc" id="saldoDesc">zerado</p>
+    </div>
+    <div class="saldo-lado">
+      <p id="saldoUltimo"></p>
+      <p><span id="saldoRegra"></span> <button class="btn-texto" type="button" data-abrir="ajustes">Alterar</button></p>
+    </div>
+  </section>
+
+  <!-- Dia -->
+  <section class="dia" id="diaCard" aria-labelledby="diaTitulo">
+    <div class="dia-topo">
+      <div class="data-nav">
+        <button class="icone" type="button" id="diaAnt" aria-label="Dia anterior">‹</button>
+        <div>
+          <h2 id="diaTitulo"></h2>
+          <p class="dia-jornada" id="diaJornada"></p>
+        </div>
+        <button class="icone" type="button" id="diaProx" aria-label="Próximo dia">›</button>
+      </div>
+      <div class="data-escolha">
+        <button class="btn-texto" type="button" id="btnHoje">Hoje</button>
+        <input type="date" id="diaData" aria-label="Escolher a data">
+      </div>
+    </div>
+
+    <div class="regua-box">
+      <div class="regua-area" id="reguaArea">
+        <div class="regua" id="regua" role="img" aria-label="Linha do tempo do dia"></div>
+      </div>
+      <div class="regua-horas" id="reguaHoras" aria-hidden="true"></div>
+      <div class="legenda" aria-hidden="true">
+        <span><i style="background:var(--primaria)"></i>Trabalhando</span>
+        <span><i style="background:var(--almoco)"></i>Almoço</span>
+        <span><i style="background:var(--fora)"></i>Saída no expediente</span>
+        <span><i style="border:1.5px dashed var(--primaria);background:var(--primaria-suave)"></i>Falta trabalhar</span>
+      </div>
+    </div>
+
+    <div class="dia-corpo">
+      <!-- Batidas -->
+      <div class="batidas">
+        <h3 class="bloco-titulo">Batidas do ponto</h3>
+        <div class="batidas-grid">
+          <div class="batida">
+            <label for="bEntrada">Entrada</label>
+            <input type="time" id="bEntrada">
+            <small data-pd="entrada"></small>
+          </div>
+          <div class="batida">
+            <label for="bAlmIni">Saída para almoço</label>
+            <input type="time" id="bAlmIni">
+            <small data-pd="almIni"></small>
+          </div>
+          <div class="batida">
+            <label for="bAlmFim">Volta do almoço</label>
+            <input type="time" id="bAlmFim">
+            <small data-pd="almFim"></small>
+          </div>
+          <div class="batida">
+            <label for="bSaida">Saída</label>
+            <input type="time" id="bSaida">
+            <small data-pd="saida"></small>
+          </div>
+        </div>
+        <div class="batidas-acoes">
+          <button class="btn" type="button" id="btnAgora">Marcar agora</button>
+          <button class="btn-texto" type="button" id="btnPadrao">Usar horário padrão</button>
+          <button class="btn-texto" type="button" id="btnLimpar">Limpar</button>
+        </div>
+
+        <div class="saidas">
+          <div class="saidas-topo">
+            <h3>Saídas no meio do expediente</h3>
+            <button class="btn-texto" type="button" id="btnExtra">+ Adicionar saída</button>
+          </div>
+          <p class="saidas-vazio" id="saidasVazio">Foi ao médico ou ao banco e voltou? Adicione a saída aqui. O tempo fora é descontado.</p>
+          <div id="extras"></div>
+        </div>
+      </div>
+
+      <!-- Resultado -->
+      <div class="resultado">
+        <div class="res-cartao" id="resCartao" aria-live="polite"></div>
+
+        <details class="detalhe" id="detalheBox" hidden>
+          <summary>Como cada batida contou</summary>
+          <ul id="detalhe"></ul>
+        </details>
+
+        <div class="horarios-box" id="horariosBox" hidden>
+          <h3>Horários de saída</h3>
+          <ul class="horarios" id="chaves"></ul>
+        </div>
+
+        <div class="lancar">
+          <p class="lancar-nota" id="lancarNota"></p>
+          <button class="btn primario" type="button" id="btnRegistrar">Lançar dia</button>
+          <button class="btn" type="button" id="btnNormal">Lançar como dia normal</button>
+          <button class="btn-texto" type="button" id="btnDesfazer" hidden>Desfazer mudanças</button>
+          <p class="aviso" id="aviso" role="status"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Histórico -->
+  <section class="historico" aria-labelledby="histTitulo">
+    <h2 id="histTitulo">Dias lançados</h2>
+    <p class="sub">O saldo mostrado em cada linha é o saldo depois daquele dia.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Dia</th><th>Batidas</th><th class="num">Resultado</th><th class="num">Saldo</th><th aria-label="Ações"></th></tr>
+        </thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+    <p class="vazio" id="histVazio">Nenhum dia lançado ainda. Preencha as batidas e use Lançar dia, ou use Lançar como dia normal.</p>
+  </section>
+</div>
+
+<!-- Ajustes -->
+<dialog id="dlgAjustes" aria-labelledby="ajTitulo">
+  <form method="dialog">
+    <div class="dlg-topo">
+      <h2 id="ajTitulo">Ajustes</h2>
+      <button class="icone" value="fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="dlg-corpo">
+      <section>
+        <h3>Saldo atual</h3>
+        <p class="ajuda">Coloque o saldo que aparece no seu extrato de ponto. Depois disso, cada dia lançado atualiza o saldo sozinho.</p>
+        <div class="linha">
+          <select id="cfgSinal" aria-label="Situação do saldo">
+            <option value="1">A meu favor</option>
+            <option value="-1">Devendo</option>
+          </select>
+          <input type="text" id="cfgSaldo" inputmode="numeric" placeholder="04:30" aria-label="Saldo em horas e minutos" style="max-width:130px">
+        </div>
+        <p class="ajuda" style="margin:6px 0 0">Digite só os números: 430 vira 04:30 e 3630 vira 36:30.</p>
+      </section>
+
+      <section>
+        <h3>Tolerância</h3>
+        <p class="ajuda">Pequenas diferenças no ponto não contam como hora extra nem como desconto.</p>
+        <div class="opcoes" role="radiogroup" aria-label="Regra da tolerância">
+          <label class="opcao">
+            <input type="radio" name="regra" value="batida">
+            <span><b>Por batida</b><span>Cada batida pode variar até a tolerância sem contar. Passou disso, conta a diferença inteira daquela batida. É a regra do sistema da empresa.</span></span>
+          </label>
+          <label class="opcao">
+            <input type="radio" name="regra" value="dia">
+            <span><b>Pelo total do dia</b><span>Soma o dia todo. Se a diferença total ficar dentro da tolerância, não conta. Passou, conta tudo.</span></span>
+          </label>
+        </div>
+        <div class="campo-curto">
+          <label for="cfgTol">Tolerância em minutos</label>
+          <input type="number" id="cfgTol" min="0" max="60" step="1">
+        </div>
+        <p class="aj-aviso" id="ajAviso" role="status"></p>
+      </section>
+
+      <section>
+        <h3>Horário de trabalho</h3>
+        <p class="ajuda">Seu horário padrão em cada dia da semana. Desmarque os dias em que você não trabalha; trabalho nesses dias conta todo como hora extra.</p>
+        <div class="scroll">
+          <table class="semana">
+            <thead>
+              <tr><th>Dia</th><th>Trabalha</th><th>Entrada</th><th>Saída almoço</th><th>Volta almoço</th><th>Saída</th><th class="num">Jornada</th></tr>
+            </thead>
+            <tbody id="semanaBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <div class="dlg-rodape">
+      <button class="btn primario" value="ok">Pronto</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Como usar -->
+<dialog id="dlgGuia" aria-labelledby="guiaTitulo">
+  <form method="dialog">
+    <div class="dlg-topo">
+      <h2 id="guiaTitulo">Como usar</h2>
+      <button class="icone" value="fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="dlg-corpo guia">
+      <section>
+        <p>O site calcula, a cada dia, se você fez hora extra ou ficou devendo, e mantém o saldo do seu banco de horas sempre atualizado.</p>
+      </section>
+
+      <section>
+        <h3>Antes de começar (uma vez só)</h3>
+        <ol>
+          <li>Abra <b>Ajustes</b> e coloque o <b>saldo atual</b> que aparece no seu extrato de ponto.</li>
+          <li>Confira o <b>horário de trabalho</b>. Já vem com segunda a quinta das 07:00 às 17:00, sexta das 07:00 às 16:00 e almoço das 11:45 às 12:45.</li>
+          <li>Confira a <b>tolerância</b>. O padrão é 5 minutos por batida, igual ao sistema da empresa.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h3>No dia a dia</h3>
+        <ol>
+          <li>Confira a <b>data</b> no topo do quadro. O site abre sempre no dia de hoje; use ‹ e › para trocar de dia.</li>
+          <li>Preencha as <b>batidas do ponto</b>: entrada, saída para almoço, volta do almoço e saída. O botão <b>Marcar agora</b> coloca a hora atual na próxima batida vazia.</li>
+          <li>Enquanto a saída estiver vazia, o quadro ao lado mostra <b>a que horas sair</b>: para fechar a jornada, para não mexer no saldo ou para usar as horas do banco.</li>
+          <li>Com a saída preenchida, aparece o <b>resultado do dia</b>: hora extra, desconto ou nada, e como fica o seu saldo.</li>
+          <li>Clique em <b>Lançar dia</b>. O resultado entra no saldo e a data passa para o próximo dia útil, com os campos em branco.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h3>Situações comuns</h3>
+        <dl>
+          <dt>Um dia normal, sem nada diferente</dt>
+          <dd>Clique em <b>Lançar como dia normal</b>. Não precisa preencher nada: o dia entra com o horário padrão, sem hora extra nem desconto.</dd>
+          <dt>Quero usar horas do banco</dt>
+          <dd>Preencha a entrada (e o almoço, se for voltar). Em <b>Horários de saída</b>, a linha <b>Usa todo o saldo</b> diz a que horas sair.</dd>
+          <dt>Saí no meio do expediente e voltei</dt>
+          <dd>Em <b>Saídas no meio do expediente</b>, clique em <b>Adicionar saída</b> e coloque a hora em que saiu e a hora em que voltou. O tempo fora é descontado.</dd>
+          <dt>Saí e não voltei mais</dt>
+          <dd>Deixe em branco as batidas seguintes. Por exemplo, saiu às 10:00 da manhã: coloque 10:00 em <b>Saída para almoço</b> e deixe a volta e a saída vazias.</dd>
+          <dt>Não bato o ponto do almoço</dt>
+          <dd>Deixe a saída e a volta do almoço em branco. O intervalo padrão é descontado automaticamente.</dd>
+          <dt>Lancei um dia errado</dt>
+          <dd>Em <b>Dias lançados</b>, clique em <b>Editar</b> (ou vá até o dia com ‹ e ›). As batidas daquele dia aparecem nos campos: corrija e clique em <b>Salvar alterações</b>. O saldo é corrigido sozinho. Para apagar o dia de vez, use <b>Excluir</b>.</dd>
+        </dl>
+      </section>
+
+      <section>
+        <h3>Como a tolerância por batida funciona</h3>
+        <p>Cada batida é comparada com o horário padrão. Até 5 minutos de diferença não conta; passou disso, conta a diferença inteira daquela batida.</p>
+        <div class="exemplo">
+          <p>Horário padrão: 07:00 às 17:00.</p>
+          <p>Entrada às 06:53: 7 min antes, passou da tolerância, conta <b class="pos-t">+7 min</b>.</p>
+          <p>Saída às 17:02: 2 min depois, dentro da tolerância, não conta.</p>
+          <p>Resultado do dia: <b class="pos-t">+7 min</b> de hora extra.</p>
+        </div>
+      </section>
+
+      <section>
+        <h3>Onde ficam seus dados</h3>
+        <p>Tudo fica salvo apenas neste navegador, neste aparelho. Se abrir o site em outro navegador ou no celular, ele começa vazio por lá.</p>
+      </section>
+    </div>
+    <div class="dlg-rodape">
+      <button class="btn primario" value="ok">Entendi</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const KEY = 'bancoDeHoras.v2';
+  const KEY_V1 = 'bancoDeHoras.v1';
+  const KEY_GUIA = 'bancoDeHoras.guiaVisto';
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+  const DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  const ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const ORDEM = [1, 2, 3, 4, 5, 6, 0]; // segunda a domingo
+  const CAMPOS = { bEntrada: 'entrada', bAlmIni: 'almIni', bAlmFim: 'almFim', bSaida: 'saida' };
+
+  // ---------- utilidades de tempo (tudo em minutos) ----------
+  const parseHM = s => {
+    const m = /^\s*(\d{1,3})(?::([0-5]\d))?\s*$/.exec(s || '');
+    return m ? (+m[1]) * 60 + (+(m[2] || 0)) : null;
+  };
+  const clock = min => {
+    const d = ((min % 1440) + 1440) % 1440;
+    return pad(Math.floor(d / 60)) + ':' + pad(d % 60);
+  };
+  const dur = min => { const a = Math.abs(min); return pad(Math.floor(a / 60)) + ':' + pad(a % 60); };
+  // "7 min", "2h", "4h29"
+  const curto = min => {
+    const a = Math.abs(min), h = Math.floor(a / 60), m = a % 60;
+    if (!h) return m + ' min';
+    return h + 'h' + (m ? pad(m) : '');
+  };
+  const sinal = min => (min > 0 ? '+' : min < 0 ? '−' : '') + curto(min);
+  const descSaldo = min => min > 0 ? `${curto(min)} a seu favor` : min < 0 ? `${curto(min)} devendo` : 'zerado';
+  const fmtData = iso => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+  const isoDe = dt => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+  const dateDe = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
+  const diaSemana = iso => dateDe(iso).getDay();
+  const hoje = () => isoDe(new Date());
+  const somarDias = (iso, n) => { const dt = dateDe(iso); dt.setDate(dt.getDate() + n); return isoDe(dt); };
+  const dataLonga = iso => {
+    const dt = dateDe(iso);
+    const ano = dt.getFullYear() !== new Date().getFullYear() ? ` de ${dt.getFullYear()}` : '';
+    return `${DIAS[dt.getDay()]}, ${dt.getDate()} de ${MESES[dt.getMonth()]}${ano}`;
+  };
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+  const ler = k => { try { return localStorage.getItem(k); } catch { return null; } };
+
+  // ---------- estado ----------
+  const diaPadrao = (trabalha, saida) => ({ trabalha, entrada: '07:00', almIni: '11:45', almFim: '12:45', saida });
+  const semanaPadrao = () => [
+    diaPadrao(false, '17:00'), // dom
+    diaPadrao(true, '17:00'),  // seg
+    diaPadrao(true, '17:00'),  // ter
+    diaPadrao(true, '17:00'),  // qua
+    diaPadrao(true, '17:00'),  // qui
+    diaPadrao(true, '16:00'),  // sex
+    diaPadrao(false, '17:00'), // sáb
+  ];
+  // regra 'batida': cada batida padrão com diferença até tolBatida não conta; acima, conta inteira
+  // regra 'dia': diferença do dia até tolerancia não conta; acima, conta inteira
+  const padrao = () => ({ regra: 'batida', tolBatida: 5, tolerancia: 10, saldo: 0, historico: [], semana: semanaPadrao() });
+
+  let st = padrao();
+  let migrouRegra = false;
+  try {
+    const v2 = JSON.parse(ler(KEY));
+    if (v2) {
+      migrouRegra = !v2.regra && Array.isArray(v2.historico) && v2.historico.length > 0;
+      st = Object.assign(padrao(), v2);
+    } else {
+      const v1 = JSON.parse(ler(KEY_V1));
+      if (v1) { st.saldo = v1.saldo || 0; st.historico = v1.historico || []; }
+    }
+    if (!Array.isArray(st.semana) || st.semana.length !== 7) st.semana = semanaPadrao();
+  } catch { st = padrao(); }
+  const salvar = () => guardar(KEY, JSON.stringify(st));
+
+  // ---------- regra de cálculo ----------
+  // Ausências = intervalos sem trabalho (almoço e saídas no expediente)
+  function juntar(aus) {
+    const ord = aus.filter(x => x.b > x.a).map(x => ({ ...x })).sort((x, y) => x.a - y.a);
+    const out = [];
+    for (const x of ord) {
+      const u = out[out.length - 1];
+      if (u && x.a <= u.b) u.b = Math.max(u.b, x.b); else out.push(x);
+    }
+    return out;
+  }
+  function trabalhadoEntre(ent, fim, aus) {
+    let t = fim - ent;
+    for (const m of juntar(aus)) t -= Math.max(0, Math.min(fim, m.b) - Math.max(ent, m.a));
+    return t;
+  }
+  // Horário de saída mais cedo em que se completam W minutos trabalhados
+  function saidaPara(ent, W, aus) {
+    if (W <= 0) return ent;
+    let t = ent, rem = W;
+    for (const m of juntar(aus)) {
+      if (m.b <= t) continue;
+      if (m.a > t) {
+        const livre = m.a - t;
+        if (rem <= livre) return t + rem;
+        rem -= livre;
+      }
+      t = Math.max(t, m.b);
+    }
+    return t + rem;
+  }
+  const almocoPadrao = cfg => {
+    const i = parseHM(cfg.almIni), f = parseHM(cfg.almFim);
+    return (i != null && f != null && f > i) ? { a: i, b: f, tipo: 'alm' } : null;
+  };
+  function esperadoDia(cfg) {
+    if (!cfg.trabalha) return 0;
+    const e = parseHM(cfg.entrada), s = parseHM(cfg.saida);
+    if (e == null || s == null || s <= e) return 0;
+    const alm = almocoPadrao(cfg);
+    return trabalhadoEntre(e, s, alm ? [alm] : []);
+  }
+
+  function lerDia() {
+    const v = id => parseHM($(id).value);
+    const extras = [...document.querySelectorAll('#extras .extra')].map(el => ({
+      el, s: parseHM(el.querySelector('[data-x=s]').value), r: parseHM(el.querySelector('[data-x=r]').value),
+    }));
+    return { ent: v('bEntrada'), ai: v('bAlmIni'), af: v('bAlmFim'), sa: v('bSaida'), extras };
+  }
+
+  // Interpreta as batidas: ausências, fim do dia e erros
+  function analisar(d, cfg) {
+    if (d.ent == null) return { vazio: true };
+    const almP = almocoPadrao(cfg);
+    const aus = [];
+    let erro = null, fim = null, motivo = null, almocoAuto = false;
+    const err = m => { if (!erro) erro = m; };
+
+    if (d.ai != null && d.af != null) {
+      if (d.af < d.ai) err('A volta do almoço está antes da saída para o almoço.');
+      else aus.push({ a: d.ai, b: d.af, tipo: 'alm' });
+    } else if (d.ai == null && d.af == null) {
+      if (almP) { aus.push({ ...almP }); almocoAuto = true; }
+    } else if (d.ai == null) {
+      err('Preencha a saída para o almoço.');
+    }
+
+    let semRetorno = null;
+    d.extras.forEach((x, i) => {
+      if (x.s == null && x.r == null) return;
+      if (x.s != null && x.r != null) {
+        if (x.r <= x.s) err(`Na saída ${i + 1}, a volta precisa ser depois da saída.`);
+        else aus.push({ a: x.s, b: x.r, tipo: 'fora' });
+      } else if (x.s != null) {
+        semRetorno = semRetorno == null ? x.s : Math.min(semRetorno, x.s);
+      } else {
+        err(`Na saída ${i + 1}, preencha a hora em que saiu.`);
+      }
+    });
+
+    if (d.sa != null) {
+      fim = d.sa;
+      if (d.ai != null && d.af == null) err('Preencha a volta do almoço. Se você não voltou, apague a saída.');
+      if (semRetorno != null) err('Preencha a volta da saída no expediente. Se você não voltou, apague a saída final.');
+    } else {
+      const cand = [];
+      if (d.ai != null && d.af == null) cand.push([d.ai, 'na saída para o almoço']);
+      if (semRetorno != null) cand.push([semRetorno, 'na saída do expediente']);
+      if (cand.length) { cand.sort((x, y) => x[0] - y[0]); [fim, motivo] = cand[0]; }
+    }
+    if (fim != null && fim <= d.ent) err('A saída precisa ser depois da entrada.');
+
+    // Para prever a saída: se saiu para o almoço e não voltou ainda, supõe volta no horário padrão
+    let ausPrev = aus, aiPrev = d.ai, afPrev = d.af;
+    if (d.ai != null && d.af == null) {
+      const volta = almP ? Math.max(almP.b, d.ai) : d.ai;
+      ausPrev = [...aus, { a: d.ai, b: volta, tipo: 'alm' }];
+      afPrev = almP ? volta : null;
+    } else if (!aus.some(x => x.tipo === 'alm') && almP) {
+      ausPrev = [...aus, { ...almP }];
+    }
+    const extrasOk = d.extras.filter(x => x.s != null && x.r != null && x.r > x.s);
+    return { ent: d.ent, ai: d.ai, af: d.af, fim, motivo, aus, ausPrev, aiPrev, afPrev, erro, almocoAuto, extrasOk };
+  }
+
+  const tolAtual = () => st.regra === 'batida' ? st.tolBatida : st.tolerancia;
+
+  // Calcula o dia. Com S informado, simula a saída final nesse horário.
+  function calcular(an, cfg, S) {
+    const prever = S != null;
+    const fim = prever ? S : an.fim;
+    const aus = prever ? an.ausPrev : an.aus;
+    const esperado = esperadoDia(cfg);
+    const trab = trabalhadoEntre(an.ent, fim, aus);
+    const diferenca = trab - esperado;
+    const det = [];
+    let conta;
+    if (esperado === 0) {
+      conta = st.regra === 'dia' && Math.abs(diferenca) <= st.tolerancia ? 0 : diferenca;
+    } else if (st.regra === 'dia') {
+      conta = Math.abs(diferenca) > st.tolerancia ? diferenca : 0;
+    } else {
+      const tol = st.tolBatida, p = k => parseHM(cfg[k]);
+      const ai = prever ? an.aiPrev : an.ai, af = prever ? an.afPrev : an.af;
+      const add = (nome, real, padr, dev) => det.push({ nome, real, pad: padr, dev, conta: Math.abs(dev) > tol });
+      add('Entrada', an.ent, p('entrada'), p('entrada') - an.ent);
+      if (ai != null && p('almIni') != null) add('Saída para almoço', ai, p('almIni'), ai - p('almIni'));
+      if (af != null && p('almFim') != null) add('Volta do almoço', af, p('almFim'), p('almFim') - af);
+      if (prever || an.motivo == null) add('Saída', fim, p('saida'), fim - p('saida'));
+      const ignorado = det.filter(x => !x.conta).reduce((s, x) => s + x.dev, 0);
+      conta = diferenca - ignorado;
+    }
+    return { esperado, trabalhado: trab, diferenca, conta, det };
+  }
+
+  // ---------- lançamentos salvos ----------
+  function dadosDeLancamento(h) {
+    if (h.batidas) { // formato antigo
+      const b = h.batidas;
+      const d = { entrada: b[0], saida: b[b.length - 1], almIni: '', almFim: '', extras: [] };
+      if (b.length >= 4) {
+        d.almIni = b[1]; d.almFim = b[2];
+        for (let i = 3; i + 1 < b.length - 1; i += 2) d.extras.push([b[i], b[i + 1]]);
+      }
+      return d;
+    }
+    return { entrada: h.entrada || '', almIni: h.almIni || '', almFim: h.almFim || '', saida: h.saida || '', extras: h.extras || [] };
+  }
+  const paraCalculo = o => ({
+    ent: parseHM(o.entrada), ai: parseHM(o.almIni), af: parseHM(o.almFim), sa: parseHM(o.saida),
+    extras: o.extras.map(([s, r]) => ({ s: parseHM(s), r: parseHM(r) })),
+  });
+  // Recalcula os lançamentos com a regra atual e ajusta o saldo pela diferença
+  function recalcularHistorico() {
+    let delta = 0;
+    st.historico.forEach(h => {
+      if (h.normal) return;
+      const cfg = st.semana[diaSemana(h.data)];
+      const an = analisar(paraCalculo(dadosDeLancamento(h)), cfg);
+      if (an.vazio || an.erro || an.fim == null) return;
+      const novo = calcular(an, cfg).conta;
+      delta += novo - h.conta;
+      h.conta = novo;
+    });
+    st.saldo += delta;
+    return delta;
+  }
+
+  const cfgDoDia = () => st.semana[diaSemana($('diaData').value || hoje())];
+  function proximoDiaUtil(iso) {
+    const dt = dateDe(iso);
+    for (let i = 0; i < 7; i++) {
+      dt.setDate(dt.getDate() + 1);
+      if (st.semana[dt.getDay()].trabalha) break;
+    }
+    return isoDe(dt);
+  }
+
+  // Próximo dia útil depois de iso que ainda não foi lançado
+  function proximoPendente(iso) {
+    let d = proximoDiaUtil(iso);
+    for (let i = 0; i < 400 && st.historico.some(h => h.data === d); i++) d = proximoDiaUtil(d);
+    return d;
+  }
+
+  // ---------- campos do dia ----------
+  function adicionarExtra(s = '', r = '') {
+    const div = document.createElement('div');
+    div.className = 'extra';
+    div.innerHTML = `
+      <span class="extra-n" aria-hidden="true"></span>
+      <div><label>Saí às</label><input type="time" data-x="s" value="${s}"></div>
+      <div><label>Voltei às</label><input type="time" data-x="r" value="${r}"></div>
+      <button class="icone" type="button" data-remover title="Remover esta saída">✕</button>
+      <span class="extra-info"></span>`;
+    $('extras').appendChild(div);
+    numerarExtras();
+    return div;
+  }
+  function numerarExtras() {
+    const linhas = [...document.querySelectorAll('#extras .extra')];
+    linhas.forEach((el, i) => {
+      const n = i + 1;
+      el.querySelector('.extra-n').textContent = n;
+      const [ls, lr] = el.querySelectorAll('label');
+      const [is, ir] = el.querySelectorAll('input');
+      is.id = `extraS${n}`; ir.id = `extraR${n}`;
+      ls.htmlFor = is.id; lr.htmlFor = ir.id;
+      is.setAttribute('aria-label', `Saída ${n}: hora em que saiu`);
+      ir.setAttribute('aria-label', `Saída ${n}: hora em que voltou`);
+      el.querySelector('[data-remover]').setAttribute('aria-label', `Remover saída ${n}`);
+    });
+    $('saidasVazio').hidden = linhas.length > 0;
+  }
+  function limparCampos() {
+    Object.keys(CAMPOS).forEach(id => $(id).value = '');
+    $('extras').innerHTML = '';
+    numerarExtras();
+  }
+  function preencherPadrao() {
+    const cfg = cfgDoDia();
+    Object.entries(CAMPOS).forEach(([id, k]) => $(id).value = cfg[k]);
+  }
+  // Data de um dia já lançado que está aberto para edição (null = dia novo)
+  let editando = null;
+  // Ao trocar de data: se o dia já foi lançado, carrega as batidas dele para editar
+  function sincronizarData() {
+    const data = $('diaData').value;
+    const item = st.historico.find(h => h.data === data);
+    if (item) { carregarLancamento(item); editando = data; }
+    else if (editando) { limparCampos(); editando = null; }
+  }
+
+  function carregarLancamento(h) {
+    limparCampos();
+    const d = dadosDeLancamento(h);
+    $('bEntrada').value = d.entrada || '';
+    $('bAlmIni').value = d.almIni || '';
+    $('bAlmFim').value = d.almFim || '';
+    $('bSaida').value = d.saida || '';
+    (d.extras || []).forEach(([s, r]) => adicionarExtra(s || '', r || ''));
+  }
+
+  // ---------- render: saldo e ajustes ----------
+  function renderSaldo() {
+    const v = $('saldoValor');
+    v.textContent = (st.saldo > 0 ? '+' : st.saldo < 0 ? '−' : '') + curto(st.saldo);
+    v.className = 'saldo-valor ' + (st.saldo > 0 ? 'pos' : st.saldo < 0 ? 'neg' : '');
+    $('saldoDesc').textContent = st.saldo > 0 ? 'a seu favor' : st.saldo < 0 ? 'devendo' : 'zerado';
+    const ult = [...st.historico].sort((a, b) => b.data.localeCompare(a.data))[0];
+    $('saldoUltimo').textContent = ult
+      ? `Atualizado até ${ABREV[diaSemana(ult.data)].toLowerCase()}, ${fmtData(ult.data)}.`
+      : 'Nenhum dia lançado ainda.';
+    $('saldoRegra').textContent = st.regra === 'batida'
+      ? `Tolerância de ${st.tolBatida} min por batida.`
+      : `Tolerância de ${st.tolerancia} min no total do dia.`;
+  }
+
+  function preencherAjustes() {
+    document.querySelectorAll('input[name=regra]').forEach(r => r.checked = r.value === st.regra);
+    $('cfgTol').value = tolAtual();
+    $('cfgSinal').value = st.saldo < 0 ? '-1' : '1';
+    $('cfgSaldo').value = dur(st.saldo);
+  }
+
+  function renderSemana() {
+    $('semanaBody').innerHTML = ORDEM.map(i => {
+      const c = st.semana[i], dis = c.trabalha ? '' : 'disabled';
+      return `<tr data-dia="${i}">
+        <td><b>${ABREV[i]}</b></td>
+        <td><input type="checkbox" data-campo="trabalha" ${c.trabalha ? 'checked' : ''} aria-label="Trabalha ${DIAS[i]}"></td>
+        <td><input type="time" data-campo="entrada" value="${c.entrada}" ${dis} aria-label="Entrada ${DIAS[i]}"></td>
+        <td><input type="time" data-campo="almIni" value="${c.almIni}" ${dis} aria-label="Saída almoço ${DIAS[i]}"></td>
+        <td><input type="time" data-campo="almFim" value="${c.almFim}" ${dis} aria-label="Volta almoço ${DIAS[i]}"></td>
+        <td><input type="time" data-campo="saida" value="${c.saida}" ${dis} aria-label="Saída ${DIAS[i]}"></td>
+        <td class="num" data-jornada>${c.trabalha ? curto(esperadoDia(c)) : 'folga'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ---------- render: régua do dia ----------
+  function renderRegua(an, fimPrev, cfg) {
+    const pE = cfg.trabalha ? parseHM(cfg.entrada) : null;
+    const pS = cfg.trabalha ? parseHM(cfg.saida) : null;
+    const temDia = an && !an.vazio;
+    const fimTrab = temDia ? (an.fim != null && !an.erro ? an.fim : fimPrev) : null;
+
+    const inicios = [pE, temDia ? an.ent : null].filter(v => v != null);
+    const fins = [pS, fimTrab].filter(v => v != null);
+    const ini = Math.floor((inicios.length ? Math.min(...inicios) : 6 * 60) / 60) * 60;
+    let fim = Math.ceil((fins.length ? Math.max(...fins) : 18 * 60) / 60) * 60;
+    if (fim - ini < 4 * 60) fim = ini + 4 * 60;
+    const pct = m => ((m - ini) / (fim - ini) * 100);
+    const P = m => pct(m).toFixed(3) + '%';
+    const L = (a, b) => ((b - a) / (fim - ini) * 100).toFixed(3) + '%';
+
+    let html = '';
+    for (let h = ini + 30; h < fim; h += 30) html += `<span class="tique${h % 60 ? ' meia' : ''}" style="left:${P(h)}"></span>`;
+
+    const segs = [];
+    let bandeiras = '';
+    if (!temDia) {
+      // mostra a jornada padrão como contorno
+      if (pE != null && pS != null) {
+        const alm = almocoPadrao(cfg);
+        if (alm) { segs.push(['fantasma', pE, alm.a]); segs.push(['fantasma', alm.b, pS]); }
+        else segs.push(['fantasma', pE, pS]);
+      }
+    } else if (fimTrab != null && fimTrab > an.ent) {
+      const prevendo = an.fim == null || an.erro;
+      const ausUsadas = prevendo ? an.ausPrev : an.aus;
+      let conhecido = an.ent;
+      if (prevendo) an.aus.forEach(x => { if (!(x.tipo === 'alm' && an.almocoAuto)) conhecido = Math.max(conhecido, x.b); });
+      const addTrab = (a, b) => {
+        if (b <= a) return;
+        if (prevendo && b > conhecido) {
+          if (a < conhecido) segs.push(['trab', a, conhecido]);
+          segs.push(['prev', Math.max(a, conhecido), b]);
+        } else segs.push(['trab', a, b]);
+      };
+      let t = an.ent;
+      for (const m of juntar(ausUsadas)) {
+        if (m.a >= fimTrab) break;
+        if (m.b <= t) continue;
+        addTrab(t, Math.min(m.a, fimTrab));
+        t = Math.max(t, m.b);
+      }
+      addTrab(t, fimTrab);
+      ausUsadas.forEach(x => {
+        const a = Math.max(x.a, an.ent), b = Math.min(x.b, fimTrab);
+        if (b > a) segs.push([x.tipo, a, b]);
+      });
+      const pf = pct(fimTrab);
+      const tx = pf > 88 ? 'translateX(-100%)' : pf < 12 ? 'none' : 'translateX(-50%)';
+      bandeiras += `<span class="bandeira" style="left:${P(fimTrab)};transform:${tx}">${prevendo ? 'sair' : 'saída'} ${clock(fimTrab)}</span>`;
+    }
+    const nomes = { trab: 'Trabalhando', prev: 'Falta trabalhar', alm: 'Almoço', fora: 'Saída no expediente', fantasma: 'Jornada padrão' };
+    html += segs.map(([c, a, b]) =>
+      `<div class="seg ${c}" style="left:${P(a)};width:${L(a, b)}" title="${nomes[c]}: ${clock(a)} às ${clock(b)}"></div>`).join('');
+
+    // marcador de agora, se a data for hoje
+    if (($('diaData').value || hoje()) === hoje()) {
+      const n = new Date(), agora = n.getHours() * 60 + n.getMinutes();
+      if (agora > ini && agora < fim) html += `<span class="agora" style="left:${P(agora)}" title="Agora: ${clock(agora)}"></span>`;
+    }
+    $('regua').innerHTML = html;
+    $('reguaArea').querySelectorAll('.bandeira').forEach(b => b.remove());
+    $('reguaArea').insertAdjacentHTML('beforeend', bandeiras);
+
+    const largura = $('regua').clientWidth || 600;
+    const passo = largura / ((fim - ini) / 60) < 44 ? 120 : 60;
+    let horas = '';
+    for (let h = ini; h <= fim; h += passo) {
+      const tx = h === ini ? 'none' : h === fim ? 'translateX(-100%)' : 'translateX(-50%)';
+      horas += `<span style="left:${P(h)};transform:${tx}">${Math.floor(h / 60) % 24}h</span>`;
+    }
+    $('reguaHoras').innerHTML = horas;
+
+    let resumo = 'Linha do tempo do dia';
+    if (segs.length && temDia) resumo += ': ' + segs.filter(s => s[0] !== 'fantasma').map(([c, a, b]) => `${nomes[c]} de ${clock(a)} a ${clock(b)}`).join('; ');
+    $('regua').setAttribute('aria-label', resumo);
+  }
+
+  // ---------- render: dia ----------
+  function renderExtrasInfo(d) {
+    d.extras.forEach(x => {
+      const el = x.el.querySelector('.extra-info');
+      const ri = x.el.querySelector('[data-x=r]');
+      const invalido = x.s != null && x.r != null && x.r <= x.s;
+      ri.classList.toggle('invalido', invalido);
+      el.classList.toggle('erro', invalido);
+      if (invalido) el.textContent = 'A volta precisa ser depois da saída.';
+      else if (x.s != null && x.r != null) el.textContent = `${curto(x.r - x.s)} fora, descontado do dia.`;
+      else if (x.s != null) el.textContent = 'Sem volta: o dia termina nesse horário.';
+      else el.textContent = '';
+    });
+  }
+
+  function renderDia() {
+    const cfg = cfgDoDia();
+    const esperado = esperadoDia(cfg);
+    const data = $('diaData').value || hoje();
+    const lancado = st.historico.find(h => h.data === data);
+    const emEdicao = !!lancado && editando === data;
+    // saldo sem o efeito deste dia (se ele já foi lançado, não conta duas vezes)
+    const base = st.saldo - (lancado ? lancado.conta : 0);
+    const resAtual = lancado ? (lancado.normal ? 'dia normal' : lancado.conta === 0 ? '0' : sinal(lancado.conta)) : '';
+    $('btnRegistrar').textContent = emEdicao ? 'Salvar alterações' : 'Lançar dia';
+    $('btnNormal').textContent = emEdicao ? 'Salvar como dia normal' : 'Lançar como dia normal';
+    $('btnDesfazer').hidden = !emEdicao;
+    const selo = emEdicao ? `<p class="res-edicao">Editando dia já lançado (resultado salvo: ${resAtual})</p>` : '';
+
+    $('diaTitulo').textContent = dataLonga(data);
+    const alm = almocoPadrao(cfg);
+    $('diaJornada').textContent = cfg.trabalha
+      ? `Jornada de ${curto(esperado)}: ${cfg.entrada} às ${alm ? `${cfg.almIni} e ${cfg.almFim} às ` : ''}${cfg.saida}`
+      : 'Dia sem expediente. Se trabalhar, tudo conta como hora extra.';
+    $('btnHoje').hidden = data === hoje();
+    document.querySelectorAll('[data-pd]').forEach(el => {
+      const v = cfg[el.dataset.pd];
+      el.textContent = cfg.trabalha && v ? `Padrão ${v}` : '';
+    });
+
+    const d = lerDia();
+    renderExtrasInfo(d);
+    const an = analisar(d, cfg);
+    const cartao = $('resCartao');
+    $('detalheBox').hidden = true;
+    let pronto = false;
+
+    if (an.vazio) {
+      cartao.className = 'res-cartao';
+      cartao.innerHTML = selo + `<p class="res-titulo">Comece pela entrada</p>
+        <p class="res-texto">Digite a hora em que você bateu a entrada. O resultado e os horários de saída aparecem aqui.</p>`;
+      $('horariosBox').hidden = true;
+      $('lancarNota').textContent = emEdicao
+        ? 'Você apagou as batidas deste dia. Preencha de novo, salve como dia normal ou use Desfazer mudanças.'
+        : 'Dia sem nada diferente? Use Lançar como dia normal.';
+      $('btnRegistrar').disabled = true;
+      renderRegua(null, null, cfg);
+      return;
+    }
+
+    if (an.erro) {
+      cartao.className = 'res-cartao alerta';
+      cartao.innerHTML = selo + `<p class="res-titulo">Confira as batidas</p><p class="res-texto">${an.erro}</p>`;
+    } else if (an.fim == null) {
+      cartao.className = 'res-cartao';
+      cartao.innerHTML = selo + (esperado > 0
+        ? `<p class="res-rotulo">Dia em andamento</p>
+           <p class="res-grande">${clock(saidaPara(an.ent, esperado, an.ausPrev))}</p>
+           <p class="res-texto">é a hora de sair para fechar a jornada de ${curto(esperado)}.</p>`
+        : `<p class="res-rotulo">Dia sem expediente</p>
+           <p class="res-texto">Todo o tempo trabalhado hoje conta como hora extra. Preencha a saída para ver o total.</p>`);
+    } else {
+      pronto = true;
+      const r = calcular(an, cfg);
+      const saldoApos = base + r.conta;
+      const cls = r.conta > 0 ? 'pos' : r.conta < 0 ? 'neg' : '';
+      const texto = r.conta > 0 ? 'de hora extra.' : r.conta < 0 ? 'de desconto no banco.'
+        : r.diferenca === 0 ? 'Jornada exata: sem hora extra nem desconto.'
+        : 'As diferenças ficaram dentro da tolerância: sem hora extra nem desconto.';
+      const obs = an.motivo ? `<p class="res-nota">Considerado que você saiu às ${clock(an.fim)}, ${an.motivo}, e não voltou.</p>` : '';
+      cartao.className = 'res-cartao ' + cls;
+      cartao.innerHTML = selo + `<p class="res-rotulo">Resultado do dia</p>
+        <p class="res-grande">${r.conta === 0 ? '0' : sinal(r.conta)}</p>
+        <p class="res-texto">${texto}</p>${obs}
+        <p class="res-saldo">Seu saldo fica <b class="${saldoApos > 0 ? 'pos-t' : saldoApos < 0 ? 'neg-t' : ''}">${descSaldo(saldoApos)}</b>.</p>
+        <p class="res-nota">Trabalhado: ${curto(r.trabalhado)}${esperado ? ` de ${curto(esperado)}` : ''}.</p>`;
+      renderDetalhe(an, r);
+    }
+
+    $('btnRegistrar').disabled = !pronto;
+    $('lancarNota').textContent = !pronto
+      ? (an.erro ? 'Corrija as batidas para salvar o dia.' : 'Preencha a saída para salvar o dia.')
+      : emEdicao ? 'Ao salvar, o saldo é corrigido com a diferença.'
+      : lancado ? 'Este dia já foi lançado. Lançar de novo substitui o anterior.' : '';
+
+    renderHorarios(an, cfg, esperado, base);
+    renderRegua(an, esperado > 0 ? saidaPara(an.ent, esperado, an.ausPrev) : null, cfg);
+  }
+
+  // Horários de saída: simula a saída minuto a minuto, mantendo as outras batidas
+  function renderHorarios(an, cfg, esperado, saldo) {
+    const pontos = [];
+    for (let S = an.ent + 1; S <= an.ent + 20 * 60; S++) pontos.push([S, calcular(an, cfg, S).conta]);
+    const valor = S => pontos[S - an.ent - 1][1];
+    const primeiro = f => { const p = pontos.find(([, c]) => f(c)); return p ? p[0] : null; };
+    const ultimo = f => { for (let i = pontos.length - 1; i >= 0; i--) if (f(pontos[i][1])) return pontos[i][0]; return null; };
+    const sobra = (S, alvo) => { const s = valor(S) - alvo; return s > 0 ? `sobram ${curto(s)} no banco` : ''; };
+
+    const itens = []; // [texto, horário, detalhe]
+    if (esperado > 0) {
+      itens.push(['Fecha a jornada', clock(saidaPara(an.ent, esperado, an.ausPrev)), `${curto(esperado)} trabalhadas`]);
+      const z1 = primeiro(c => c === 0), z2 = ultimo(c => c === 0);
+      if (z1 != null) itens.push(['Não mexe no saldo', z1 === z2 ? clock(z1) : `${clock(z1)} a ${clock(z2)}`, '']);
+      else itens.push(['Não mexe no saldo', '—', 'nenhum horário dá exatamente zero']);
+    }
+    const ext = primeiro(c => c > 0);
+    if (ext != null) itens.push(['Gera hora extra', `a partir de ${clock(ext)}`, `saindo às ${clock(ext)}: ${sinal(valor(ext))}`]);
+    const desc = ultimo(c => c < 0);
+    if (desc != null && esperado > 0) itens.push(['Gera desconto', `até ${clock(desc)}`, `saindo às ${clock(desc)}: ${sinal(valor(desc))}`]);
+    if (saldo > 0 && esperado > 0) {
+      const S = primeiro(c => c >= -saldo);
+      if (S != null && S <= an.ent + 1) itens.push([`Usa todo o saldo (${curto(saldo)})`, 'dá para folgar', 'o saldo cobre o dia inteiro']);
+      else if (S != null) itens.push([`Usa todo o saldo (${curto(saldo)})`, clock(S), sobra(S, -saldo)]);
+    } else if (saldo < 0) {
+      const divida = -saldo;
+      const S = primeiro(c => c >= divida);
+      if (S != null) itens.push([`Quita o que você deve (${curto(divida)})`, clock(S), sobra(S, divida)]);
+    }
+    $('chaves').innerHTML = itens.map(([t, v, q]) =>
+      `<li><span>${t}${q ? `<small>${q}</small>` : ''}</span><b>${v}</b></li>`).join('');
+    $('horariosBox').hidden = !itens.length;
+  }
+
+  // Como cada batida contou (regra por batida)
+  function renderDetalhe(an, r) {
+    if (st.regra !== 'batida' || !r.det.length) return;
+    const linhas = [];
+    let soma = 0;
+    r.det.forEach(x => {
+      const dif = Math.abs(x.real - x.pad);
+      const quando = dif === 0 ? 'no horário padrão' : `${curto(dif)} ${x.real < x.pad ? 'antes' : 'depois'} do padrão (${clock(x.pad)})`;
+      if (x.conta) soma += x.dev;
+      const val = x.conta ? `<b class="${x.dev > 0 ? 'pos-t' : 'neg-t'}">${sinal(x.dev)}</b>`
+        : `<b class="ign">${dif === 0 ? '—' : 'não conta'}</b>`;
+      const regra = dif === 0 ? '' : x.conta ? ', passou da tolerância' : ', dentro da tolerância';
+      linhas.push(`<li><span>${x.nome} ${clock(x.real)}</span>${val}<span class="q">${quando}${regra}</span></li>`);
+    });
+    an.extrasOk.forEach(x => {
+      if (an.fim != null && x.s >= an.fim) return;
+      const fora = Math.min(x.r, an.fim) - x.s;
+      soma -= fora;
+      linhas.push(`<li><span>Saída ${clock(x.s)} a ${clock(x.r)}</span><b class="neg-t">${sinal(-fora)}</b><span class="q">tempo fora conta inteiro</span></li>`);
+    });
+    const resto = r.conta - soma;
+    if (resto !== 0) {
+      const nome = an.motivo ? `Não voltou depois das ${clock(an.fim)}` : 'Ajuste';
+      const q = an.motivo ? 'resto da jornada não trabalhado' : 'almoço e saídas no mesmo horário';
+      linhas.push(`<li><span>${nome}</span><b class="${resto > 0 ? 'pos-t' : 'neg-t'}">${sinal(resto)}</b><span class="q">${q}</span></li>`);
+    }
+    $('detalhe').innerHTML = linhas.join('');
+    $('detalheBox').hidden = false;
+  }
+
+  // ---------- render: histórico ----------
+  function textoBatidas(h) {
+    if (h.normal) return `<span class="normal-tag">Dia normal</span>${h.entrada ? `${h.entrada} às ${h.saida}` : 'folga'}`;
+    if (h.batidas) return h.batidas.join(', ');
+    let t;
+    if (h.almIni && h.almFim) t = `${h.entrada} a ${h.almIni}, ${h.almFim} a ${h.saida}`;
+    else if (h.almIni) t = `${h.entrada} a ${h.almIni} (não voltou)`;
+    else t = `${h.entrada} a ${h.saida || '?'}`;
+    (h.extras || []).forEach(([s, r]) => { t += r ? `; fora de ${s} a ${r}` : `; saiu ${s} e não voltou`; });
+    return t;
+  }
+
+  function renderHistorico() {
+    const lista = [...st.historico].sort((a, b) => a.data.localeCompare(b.data));
+    let acumulado = st.saldo;
+    const linhas = [];
+    for (let i = lista.length - 1; i >= 0; i--) {
+      linhas.push({ ...lista[i], saldoApos: acumulado });
+      acumulado -= lista[i].conta;
+    }
+    $('histVazio').hidden = linhas.length > 0;
+    $('histBody').innerHTML = linhas.map(h => {
+      const cls = h.conta > 0 ? 'pos-t' : h.conta < 0 ? 'neg-t' : '';
+      const aberto = h.data === ($('diaData').value || '');
+      return `<tr class="${aberto ? 'editando' : ''}">
+        <td class="nw"><b>${ABREV[diaSemana(h.data)]}</b> ${fmtData(h.data)}</td>
+        <td class="batidas-txt">${textoBatidas(h)}</td>
+        <td class="num ${cls}"><b>${h.conta === 0 ? '0' : sinal(h.conta)}</b></td>
+        <td class="num">${h.saldoApos === 0 ? '0' : sinal(h.saldoApos)}</td>
+        <td class="num nw"><button class="editar" type="button" data-data="${h.data}" aria-label="Editar o lançamento de ${fmtData(h.data)}">Editar</button><button class="excluir" type="button" data-data="${h.data}" aria-label="Excluir o lançamento de ${fmtData(h.data)}">Excluir</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderTudo() { renderSaldo(); renderDia(); renderHistorico(); }
+
+  // ---------- ações ----------
+  function lancar(item) {
+    const existente = st.historico.find(h => h.data === item.data);
+    const edicao = !!existente && editando === item.data;
+    if (existente && !edicao && !confirm(`O dia ${fmtData(item.data)} já foi lançado. Substituir pelo novo?`)) return;
+    if (existente) {
+      st.saldo -= existente.conta;
+      st.historico = st.historico.filter(h => h !== existente);
+    }
+    st.historico.push(item);
+    st.saldo += item.conta;
+    salvar();
+    const txt = h => h.normal ? 'dia normal' : h.conta === 0 ? '0' : sinal(h.conta);
+    // volta para a sequência: próximo dia útil que ainda não foi lançado
+    const prox = proximoPendente(item.data);
+    $('diaData').value = prox;
+    editando = null;
+    limparCampos();
+    sincronizarData();
+    renderTudo();
+    if (edicao) {
+      const mudou = item.conta - existente.conta;
+      $('aviso').textContent = `Alterações de ${ABREV[diaSemana(item.data)].toLowerCase()}, ${fmtData(item.data)} salvas: antes ${txt(existente)}, agora ${txt(item)}.`
+        + (mudou ? ` O saldo mudou ${sinal(mudou)}.` : ' O saldo não mudou.')
+        + ` Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`;
+      return;
+    }
+    const oque = item.normal ? 'lançado como dia normal' : `lançado (${item.conta === 0 ? '0' : sinal(item.conta)})`;
+    $('aviso').textContent = `${ABREV[diaSemana(item.data)]} ${fmtData(item.data)} ${oque}. Agora você está em ${ABREV[diaSemana(prox)].toLowerCase()}, ${fmtData(prox)}.`;
+  }
+
+  $('btnRegistrar').addEventListener('click', () => {
+    const data = $('diaData').value;
+    const cfg = cfgDoDia();
+    const d = lerDia();
+    const an = analisar(d, cfg);
+    if (!data || an.vazio || an.erro || an.fim == null) return;
+    lancar({
+      data,
+      entrada: $('bEntrada').value, almIni: $('bAlmIni').value, almFim: $('bAlmFim').value, saida: $('bSaida').value,
+      extras: d.extras.filter(x => x.s != null || x.r != null)
+        .map(x => [x.s != null ? clock(x.s) : '', x.r != null ? clock(x.r) : '']),
+      conta: calcular(an, cfg).conta,
+    });
+  });
+
+  $('btnNormal').addEventListener('click', () => {
+    const data = $('diaData').value;
+    if (!data) return;
+    const cfg = cfgDoDia();
+    lancar({
+      data, normal: true,
+      entrada: cfg.trabalha ? cfg.entrada : '', almIni: cfg.trabalha ? cfg.almIni : '',
+      almFim: cfg.trabalha ? cfg.almFim : '', saida: cfg.trabalha ? cfg.saida : '',
+      extras: [], conta: 0,
+    });
+  });
+
+  $('histBody').addEventListener('click', e => {
+    const ed = e.target.closest('button.editar');
+    if (ed) {
+      irPara(ed.dataset.data);
+      $('diaCard').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      $('bEntrada').focus({ preventScroll: true });
+      return;
+    }
+    const btn = e.target.closest('button.excluir');
+    if (!btn) return;
+    const item = st.historico.find(h => h.data === btn.dataset.data);
+    if (!item) return;
+    const ajuste = item.conta === 0 ? 'O saldo não muda.' : `O saldo muda ${sinal(-item.conta)}.`;
+    if (!confirm(`Excluir o lançamento de ${fmtData(item.data)}? ${ajuste}`)) return;
+    st.saldo -= item.conta;
+    st.historico = st.historico.filter(h => h !== item);
+    salvar();
+    $('diaData').value = item.data;
+    carregarLancamento(item);
+    editando = null;
+    renderTudo();
+    $('aviso').textContent = `Lançamento de ${fmtData(item.data)} excluído. As batidas voltaram para os campos para você corrigir.`;
+    $('diaCard').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  });
+
+  // campos do dia
+  $('diaCard').addEventListener('input', e => {
+    if (e.target.id === 'diaData') { sincronizarData(); renderHistorico(); }
+    $('aviso').textContent = '';
+    renderDia();
+  });
+  function irPara(iso) {
+    $('diaData').value = iso;
+    sincronizarData();
+    $('aviso').textContent = '';
+    renderDia();
+    renderHistorico();
+  }
+  $('btnDesfazer').addEventListener('click', () => {
+    const item = st.historico.find(h => h.data === $('diaData').value);
+    if (item) carregarLancamento(item);
+    renderDia();
+  });
+  $('diaAnt').addEventListener('click', () => irPara(somarDias($('diaData').value || hoje(), -1)));
+  $('diaProx').addEventListener('click', () => irPara(somarDias($('diaData').value || hoje(), 1)));
+  $('btnHoje').addEventListener('click', () => irPara(hoje()));
+  $('btnAgora').addEventListener('click', () => {
+    const n = new Date(), agora = pad(n.getHours()) + ':' + pad(n.getMinutes());
+    const vazio = Object.keys(CAMPOS).find(id => !$(id).value) || 'bSaida';
+    $(vazio).value = agora;
+    $(vazio).focus();
+    renderDia();
+  });
+  $('btnPadrao').addEventListener('click', () => { preencherPadrao(); renderDia(); });
+  $('btnLimpar').addEventListener('click', () => { limparCampos(); renderDia(); });
+  $('btnExtra').addEventListener('click', () => {
+    adicionarExtra().querySelector('[data-x=s]').focus();
+    renderDia();
+  });
+  $('extras').addEventListener('click', e => {
+    const btn = e.target.closest('[data-remover]');
+    if (!btn) return;
+    btn.closest('.extra').remove();
+    numerarExtras();
+    renderDia();
+  });
+
+  // ajustes
+  // Máscara do saldo: digita só números e os dois pontos entram sozinhos (430 → 04:30, 3630 → 36:30)
+  $('cfgSaldo').addEventListener('input', () => {
+    const inp = $('cfgSaldo');
+    const dig = inp.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 5);
+    const n = dig ? parseInt(dig, 10) : 0;
+    inp.value = pad(Math.floor(n / 100)) + ':' + pad(n % 100);
+    inp.setSelectionRange(inp.value.length, inp.value.length);
+    lerSaldo();
+  });
+  $('cfgSaldo').addEventListener('focus', () => $('cfgSaldo').select());
+  $('cfgSinal').addEventListener('input', lerSaldo);
+  function lerSaldo() {
+    const saldo = parseHM($('cfgSaldo').value);
+    $('cfgSaldo').classList.toggle('invalido', saldo == null);
+    if (saldo == null) return;
+    st.saldo = saldo * (+$('cfgSinal').value);
+    salvar();
+    renderTudo();
+  }
+  function aplicarMudancaRegra() {
+    const delta = recalcularHistorico();
+    salvar();
+    $('cfgSinal').value = st.saldo < 0 ? '-1' : '1';
+    $('cfgSaldo').value = dur(st.saldo);
+    renderTudo();
+    $('ajAviso').textContent = delta
+      ? `Os dias já lançados foram recalculados com a nova regra. O saldo mudou ${sinal(delta)}.` : '';
+  }
+  document.querySelectorAll('input[name=regra]').forEach(r => r.addEventListener('change', () => {
+    st.regra = r.value;
+    $('cfgTol').value = tolAtual();
+    aplicarMudancaRegra();
+  }));
+  $('cfgTol').addEventListener('input', () => {
+    const tol = parseInt($('cfgTol').value, 10);
+    const ok = !isNaN(tol) && tol >= 0;
+    $('cfgTol').classList.toggle('invalido', !ok);
+    if (!ok) return;
+    if (st.regra === 'batida') st.tolBatida = tol; else st.tolerancia = tol;
+    aplicarMudancaRegra();
+  });
+  $('semanaBody').addEventListener('input', e => {
+    const inp = e.target, tr = inp.closest('tr');
+    if (!tr || !inp.dataset.campo) return;
+    const c = st.semana[+tr.dataset.dia];
+    if (inp.dataset.campo === 'trabalha') {
+      c.trabalha = inp.checked;
+      tr.querySelectorAll('input[type=time]').forEach(t => t.disabled = !c.trabalha);
+    } else {
+      c[inp.dataset.campo] = inp.value;
+    }
+    tr.querySelector('[data-jornada]').textContent = c.trabalha ? curto(esperadoDia(c)) : 'folga';
+    salvar();
+    renderDia();
+  });
+
+  // janelas
+  const abrir = qual => {
+    const dlg = qual === 'guia' ? $('dlgGuia') : $('dlgAjustes');
+    if (qual === 'guia') { guardar(KEY_GUIA, '1'); $('boasVindas').hidden = true; }
+    else { preencherAjustes(); $('ajAviso').textContent = ''; }
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  };
+  $('btnGuia').addEventListener('click', () => abrir('guia'));
+  $('btnAjustes').addEventListener('click', () => abrir('ajustes'));
+  document.querySelectorAll('[data-abrir]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.abrir)));
+  $('fecharBoasVindas').addEventListener('click', () => { guardar(KEY_GUIA, '1'); $('boasVindas').hidden = true; });
+  // fechar clicando fora da janela
+  document.querySelectorAll('dialog').forEach(dlg => dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); }));
+  window.addEventListener('resize', () => renderDia());
+
+  // ---------- início: sempre no dia de hoje, campos em branco ----------
+  if (migrouRegra) {
+    const delta = recalcularHistorico();
+    salvar();
+    if (delta) setTimeout(() => {
+      $('aviso').textContent = `Regra alterada para tolerância por batida: os dias já lançados foram recalculados e o saldo mudou ${sinal(delta)}.`;
+    });
+  }
+  $('boasVindas').hidden = ler(KEY_GUIA) === '1' || st.historico.length > 0;
+  renderSemana();
+  $('diaData').value = hoje();
+  limparCampos();
+  sincronizarData();
+  renderTudo();
+})();
+</script>
+</body>
+</html>
