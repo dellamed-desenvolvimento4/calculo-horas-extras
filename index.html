@@ -676,7 +676,7 @@
   ];
   // regra 'batida': cada batida padrão com diferença até tolBatida não conta; acima, conta inteira
   // regra 'dia': diferença do dia até tolerancia não conta; acima, conta inteira
-  const padrao = () => ({ regra: 'batida', tolBatida: 5, tolerancia: 10, saldo: 0, historico: [], semana: semanaPadrao() });
+  const padrao = () => ({ regra: 'batida', tolBatida: 5, tolerancia: 5, tolDia5: true, saldo: 0, historico: [], semana: semanaPadrao() });
 
   let st = padrao();
   let migrouRegra = false;
@@ -684,6 +684,14 @@
     const v2 = JSON.parse(ler(KEY));
     if (v2) {
       migrouRegra = !v2.regra && Array.isArray(v2.historico) && v2.historico.length > 0;
+      // o padrão da regra "total do dia" passou de 10 para 5 min
+      if (!v2.tolDia5) {
+        if (v2.tolerancia === 10) {
+          v2.tolerancia = 5;
+          if (v2.regra === 'dia' && Array.isArray(v2.historico) && v2.historico.length) migrouRegra = true;
+        }
+        v2.tolDia5 = true;
+      }
       st = Object.assign(padrao(), v2);
     } else {
       const v1 = JSON.parse(ler(KEY_V1));
@@ -1552,7 +1560,7 @@
     const delta = recalcularHistorico();
     salvar();
     if (delta) setTimeout(() => {
-      $('aviso').textContent = `Regra alterada para tolerância por batida: os dias já lançados foram recalculados e o saldo mudou ${sinal(delta)}.`;
+      $('aviso').textContent = `A tolerância foi atualizada: os dias já lançados foram recalculados e o saldo mudou ${sinal(delta)}.`;
     });
   }
   $('boasVindas').hidden = ler(KEY_GUIA) === '1' || st.historico.length > 0;
