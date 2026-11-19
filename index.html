@@ -108,8 +108,12 @@
   .saldo-valor.pos { color: var(--credito); }
   .saldo-valor.neg { color: var(--debito); }
   .saldo-desc { font-size: 20px; font-weight: 600; margin-top: 6px; }
-  .saldo-lado { color: var(--grafite); font-size: 14px; max-width: 34ch; }
-  .saldo-lado p + p { margin-top: 4px; }
+  .saldo-lado { color: var(--grafite); font-size: 14px; max-width: 44ch; }
+  .saldo-lado p + p { margin-top: 2px; }
+  .saldo-lado .btn-texto, .btn-texto.mini { padding: 2px 4px; font-size: 14px; }
+  .dlg-corpo section.destaque { animation: destaque 1.6s ease-out; }
+  @keyframes destaque { from { background: var(--primaria-suave); } to { background: transparent; } }
+  @media (prefers-reduced-motion: reduce) { .dlg-corpo section.destaque { animation: none; } }
 
   /* ---------- dia ---------- */
   .dia { background: var(--folha); border: 1px solid var(--linha); border-radius: var(--raio); }
@@ -294,6 +298,30 @@
   .backup-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
   .opcao input[type=checkbox] { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--primaria); flex: 0 0 auto; }
 
+  /* confirmação */
+  dialog.dlg-pequeno { width: min(440px, calc(100% - 24px)); }
+  .cf-corpo { padding: 26px 24px 8px; }
+  .cf-icone {
+    width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 14px;
+    background: var(--primaria-suave); color: var(--primaria);
+  }
+  .cf-icone.perigo { background: var(--debito-suave); color: var(--debito); }
+  .cf-icone svg { width: 24px; height: 24px; }
+  .cf-corpo h2 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+  .cf-corpo > p { color: var(--grafite); margin-top: 6px; font-size: 15px; }
+  .cf-detalhe { margin-top: 16px; background: var(--campo); border-radius: 12px; padding: 4px 14px; }
+  .cf-detalhe dl { margin: 0; }
+  .cf-detalhe dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; font-size: 15px; }
+  .cf-detalhe dl > div + div { border-top: 1px solid var(--linha); }
+  .cf-detalhe dt { color: var(--grafite); flex: 0 0 auto; }
+  .cf-detalhe dd { margin: 0; text-align: right; font-weight: 600; }
+  .cf-detalhe .normal-tag { margin-right: 4px; }
+  .cf-botoes { display: flex; justify-content: flex-end; gap: 8px; padding: 18px 24px 22px; }
+  .cf-botoes .btn { min-width: 120px; }
+  .btn.perigo { background: var(--debito); border-color: var(--debito); color: #fff; }
+  .btn.perigo:hover { background: var(--debito); border-color: var(--debito); filter: brightness(.92); }
+  @media (max-width: 420px) { .cf-botoes { flex-direction: column-reverse; } .cf-botoes .btn { width: 100%; } }
+
   .guia { max-width: 64ch; }
   .guia ol, .guia ul { padding-left: 22px; margin: 8px 0 0; }
   .guia li { margin: 6px 0; }
@@ -350,7 +378,9 @@
     </div>
     <div class="saldo-lado">
       <p id="saldoUltimo"></p>
-      <p><span id="saldoRegra"></span> <button class="btn-texto" type="button" data-abrir="ajustes">Alterar</button></p>
+      <p><span>Saldo diferente do extrato?</span> <button class="btn-texto" type="button" data-abrir="ajustes" data-secao="ajSaldo">Alterar saldo</button></p>
+      <p><span id="saldoHorario"></span> <button class="btn-texto" type="button" data-abrir="ajustes" data-secao="ajHorario">Alterar</button></p>
+      <p><span id="saldoRegra"></span> <button class="btn-texto" type="button" data-abrir="ajustes" data-secao="ajTol">Alterar</button></p>
     </div>
   </section>
 
@@ -361,7 +391,7 @@
         <button class="icone" type="button" id="diaAnt" aria-label="Dia anterior">‹</button>
         <div>
           <h2 id="diaTitulo"></h2>
-          <p class="dia-jornada" id="diaJornada"></p>
+          <p class="dia-jornada"><span id="diaJornada"></span> <button class="btn-texto mini" type="button" data-abrir="ajustes" data-secao="ajHorario">Alterar</button></p>
         </div>
         <button class="icone" type="button" id="diaProx" aria-label="Próximo dia">›</button>
       </div>
@@ -493,7 +523,7 @@
       <button class="icone" value="fechar" aria-label="Fechar">✕</button>
     </div>
     <div class="dlg-corpo">
-      <section>
+      <section id="ajSaldo">
         <h3>Saldo atual</h3>
         <p class="ajuda">Coloque o saldo que aparece no seu extrato de ponto. Depois disso, cada dia lançado atualiza o saldo sozinho.</p>
         <div class="linha">
@@ -506,7 +536,7 @@
         <p class="ajuda" style="margin:6px 0 0">Digite só os números: 430 vira 04:30 e 3630 vira 36:30.</p>
       </section>
 
-      <section>
+      <section id="ajTol">
         <h3>Tolerância</h3>
         <p class="ajuda">Pequenas diferenças no ponto não contam como hora extra nem como desconto.</p>
         <div class="opcoes" role="radiogroup" aria-label="Regra da tolerância">
@@ -526,7 +556,7 @@
         <p class="aj-aviso" id="ajAviso" role="status"></p>
       </section>
 
-      <section>
+      <section id="ajHorario">
         <h3>Horário de trabalho</h3>
         <p class="ajuda">Seu horário padrão em cada dia da semana. Desmarque os dias em que você não trabalha; trabalho nesses dias conta todo como hora extra.</p>
         <div class="scroll">
@@ -672,6 +702,22 @@
     </div>
     <div class="dlg-rodape">
       <button class="btn primario" value="ok">Entendi</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Confirmação -->
+<dialog id="dlgConfirmar" class="dlg-pequeno" aria-labelledby="cfTitulo" aria-describedby="cfTexto">
+  <form method="dialog">
+    <div class="cf-corpo">
+      <div class="cf-icone" id="cfIcone" aria-hidden="true"></div>
+      <h2 id="cfTitulo"></h2>
+      <p id="cfTexto"></p>
+      <div class="cf-detalhe" id="cfDetalhe" hidden></div>
+    </div>
+    <div class="cf-botoes">
+      <button class="btn" value="nao" id="cfNao">Cancelar</button>
+      <button class="btn primario" value="sim" id="cfSim">Confirmar</button>
     </div>
   </form>
 </dialog>
@@ -1089,6 +1135,24 @@
     $('saldoRegra').textContent = st.regra === 'batida'
       ? `Tolerância de ${st.tolBatida} min por batida.`
       : `Tolerância de ${st.tolerancia} min no total do dia.`;
+    $('saldoHorario').textContent = resumoHorario();
+  }
+
+  // "Horário: seg a qui, 07:00 às 17:00; sex, 07:00 às 16:00."
+  function resumoHorario() {
+    const grupos = [];
+    ORDEM.forEach(i => {
+      const c = st.semana[i];
+      if (!c.trabalha) { grupos.push(null); return; }
+      const txt = `${c.entrada} às ${c.saida}`;
+      const ult = grupos[grupos.length - 1];
+      if (ult && ult.txt === txt) ult.fim = i; else grupos.push({ ini: i, fim: i, txt });
+    });
+    const partes = grupos.filter(Boolean).map(g => {
+      const dias = g.ini === g.fim ? ABREV[g.ini] : `${ABREV[g.ini]} a ${ABREV[g.fim]}`;
+      return `${dias.toLowerCase()}, ${g.txt}`;
+    });
+    return partes.length ? `Horário: ${partes.join('; ')}.` : 'Nenhum dia de trabalho configurado.';
   }
 
   function preencherAjustes() {
@@ -1120,7 +1184,7 @@
     el.classList.remove('erro');
     el.textContent = `Backup baixado: ${a.download}. Guarde esse arquivo em um lugar seguro.`;
   }
-  function importarBackup(texto) {
+  async function importarBackup(texto) {
     const el = $('backupAviso');
     let dados;
     try {
@@ -1133,7 +1197,16 @@
       return;
     }
     const n = dados.historico.length;
-    if (!confirm(`Restaurar este backup? Ele tem ${n} ${n === 1 ? 'dia lançado' : 'dias lançados'} e saldo de ${descSaldo(dados.saldo)}. Os dados atuais deste navegador serão substituídos.`)) return;
+    const ok = await confirmar({
+      titulo: 'Restaurar este backup?',
+      texto: 'Os dados atuais deste navegador serão trocados pelos do arquivo. Se quiser guardar os atuais, baixe um backup antes.',
+      detalhe: linhasDetalhe([
+        ['No arquivo', `${n} ${n === 1 ? 'dia lançado' : 'dias lançados'}, saldo de ${descSaldo(dados.saldo)}`],
+        ['Agora neste navegador', `${st.historico.length} ${st.historico.length === 1 ? 'dia lançado' : 'dias lançados'}, saldo de ${descSaldo(st.saldo)}`],
+      ]),
+      botao: 'Restaurar', perigo: true, icone: 'arquivo',
+    });
+    if (!ok) return;
     st = Object.assign(padrao(), dados);
     if (!Array.isArray(st.semana) || st.semana.length !== 7) st.semana = semanaPadrao();
     salvar();
@@ -1532,6 +1605,33 @@
 
   function renderTudo() { renderSaldo(); renderDia(); renderHistorico(); }
 
+  // ---------- janela de confirmação ----------
+  const ICONES = {
+    lixeira: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+    trocar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3"/><path d="M20 17H7l3 3"/></svg>',
+    arquivo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M12 11v6M9 14l3 3 3-3"/></svg>',
+  };
+  // Abre a janela e responde true (confirmou) ou false (cancelou)
+  function confirmar({ titulo, texto, detalhe = '', botao = 'Confirmar', perigo = false, icone = 'trocar' }) {
+    const dlg = $('dlgConfirmar');
+    if (typeof dlg.showModal !== 'function') return Promise.resolve(window.confirm(`${titulo}\n${texto}`));
+    $('cfTitulo').textContent = titulo;
+    $('cfTexto').textContent = texto;
+    $('cfDetalhe').innerHTML = detalhe;
+    $('cfDetalhe').hidden = !detalhe;
+    $('cfSim').textContent = botao;
+    $('cfSim').className = 'btn ' + (perigo ? 'perigo' : 'primario');
+    $('cfIcone').className = 'cf-icone' + (perigo ? ' perigo' : '');
+    $('cfIcone').innerHTML = ICONES[icone] || '';
+    dlg.returnValue = '';
+    return new Promise(resolve => {
+      dlg.addEventListener('close', () => resolve(dlg.returnValue === 'sim'), { once: true });
+      dlg.showModal();
+      $('cfNao').focus();
+    });
+  }
+  const linhasDetalhe = pares => `<dl>${pares.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+
   // ---------- desfazer ----------
   // Guarda uma foto do estado antes de cada lançamento, para o botão Desfazer
   let fotoDesfazer = null, timerDesfazer = null;
@@ -1566,10 +1666,22 @@
   });
 
   // ---------- ações ----------
-  function lancar(item) {
+  async function lancar(item) {
     const existente = st.historico.find(h => h.data === item.data);
     const edicao = !!existente && editando === item.data;
-    if (existente && !edicao && !confirm(`O dia ${fmtData(item.data)} já foi lançado. Substituir pelo novo?`)) return;
+    if (existente && !edicao) {
+      const ok = await confirmar({
+        titulo: 'Substituir este dia?',
+        texto: 'Este dia já foi lançado. O lançamento anterior será trocado pelo novo, e o saldo é corrigido.',
+        detalhe: linhasDetalhe([
+          ['Dia', `${ABREV[diaSemana(item.data)]}, ${fmtData(item.data)}`],
+          ['Lançado antes', textoResultado(existente)],
+          ['Novo lançamento', textoResultado(item)],
+        ]),
+        botao: 'Substituir', icone: 'trocar',
+      });
+      if (!ok) return;
+    }
     const foto = fotografar();
     if (existente) {
       st.saldo -= existente.conta;
@@ -1710,7 +1822,7 @@
 
   $('histMes').addEventListener('change', () => { mesFiltro = $('histMes').value; renderHistorico(); });
 
-  $('histBody').addEventListener('click', e => {
+  $('histBody').addEventListener('click', async e => {
     const ed = e.target.closest('button.editar');
     if (ed) {
       irPara(ed.dataset.data);
@@ -1722,8 +1834,21 @@
     if (!btn) return;
     const item = st.historico.find(h => h.data === btn.dataset.data);
     if (!item) return;
-    const ajuste = item.conta === 0 ? 'O saldo não muda.' : `O saldo muda ${sinal(-item.conta)}.`;
-    if (!confirm(`Excluir o lançamento de ${fmtData(item.data)}? ${ajuste}`)) return;
+    const novoSaldo = st.saldo - item.conta;
+    const resultado = item.conta === 0 ? (item.normal ? 'dia normal' : item.folga ? 'folga sem desconto' : '0')
+      : `<span class="${item.conta > 0 ? 'pos-t' : 'neg-t'}">${sinal(item.conta)}</span>`;
+    const ok = await confirmar({
+      titulo: 'Excluir este dia?',
+      texto: 'O lançamento sai da lista e o saldo é corrigido. Logo depois, dá para desfazer.',
+      detalhe: linhasDetalhe([
+        ['Dia', `${DIAS[diaSemana(item.data)]}, ${fmtData(item.data)}`],
+        ['Lançamento', textoBatidas(item)],
+        ['Resultado', resultado],
+        ['Saldo', item.conta === 0 ? `continua ${descSaldo(st.saldo)}` : `${descSaldo(st.saldo)} passa para <b class="${novoSaldo > 0 ? 'pos-t' : novoSaldo < 0 ? 'neg-t' : ''}">${descSaldo(novoSaldo)}</b>`],
+      ]),
+      botao: 'Excluir dia', perigo: true, icone: 'lixeira',
+    });
+    if (!ok) return;
     const foto = fotografar();
     st.saldo -= item.conta;
     st.historico = st.historico.filter(h => h !== item);
@@ -1832,19 +1957,31 @@
     }
     tr.querySelector('[data-jornada]').textContent = c.trabalha ? curto(esperadoDia(c)) : 'folga';
     salvar();
+    renderSaldo();
     renderDia();
   });
 
-  // janelas
-  const abrir = qual => {
+  // janelas (secao: id da parte de Ajustes para abrir direto nela)
+  const abrir = (qual, secao) => {
     const dlg = qual === 'guia' ? $('dlgGuia') : $('dlgAjustes');
     if (qual === 'guia') { guardar(KEY_GUIA, '1'); $('boasVindas').hidden = true; }
-    else { preencherAjustes(); $('ajAviso').textContent = ''; }
+    else { preencherAjustes(); $('ajAviso').textContent = ''; $('backupAviso').textContent = ''; }
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    const alvo = secao && $(secao);
+    if (alvo) {
+      alvo.scrollIntoView({ block: 'start' });
+      alvo.classList.remove('destaque');
+      void alvo.offsetWidth; // reinicia a animação
+      alvo.classList.add('destaque');
+      const campo = alvo.querySelector('input[type=text], input[type=number], input[type=time]:not([disabled])');
+      if (campo) campo.focus({ preventScroll: true });
+    } else {
+      dlg.querySelector('.dlg-corpo').scrollTop = 0;
+    }
   };
   $('btnGuia').addEventListener('click', () => abrir('guia'));
   $('btnAjustes').addEventListener('click', () => abrir('ajustes'));
-  document.querySelectorAll('[data-abrir]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.abrir)));
+  document.querySelectorAll('[data-abrir]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.abrir, b.dataset.secao)));
   $('fecharBoasVindas').addEventListener('click', () => { guardar(KEY_GUIA, '1'); $('boasVindas').hidden = true; });
   // fechar clicando fora da janela
   document.querySelectorAll('dialog').forEach(dlg => dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); }));
