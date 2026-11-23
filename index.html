@@ -259,6 +259,11 @@
   .editar { border: none; background: none; color: var(--primaria); cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 6px; border-radius: 6px; }
   .editar:hover { text-decoration: underline; }
   tr.editando td { background: var(--primaria-suave); }
+  tr.editando td:first-child { box-shadow: inset 3px 0 0 var(--primaria); }
+  th.sel, td.sel { width: 40px; padding-left: 12px; padding-right: 0; }
+  .sel-dia { width: 18px; height: 18px; accent-color: var(--primaria); cursor: pointer; vertical-align: middle; }
+  .btn.hoje { min-height: 38px; padding: 0 14px; }
+  .btn.hoje:disabled { opacity: 1; color: var(--grafite); background: var(--campo); cursor: default; }
   .normal-tag.folga-tag { background: var(--fora-suave); color: var(--fora); }
   .folga-resumo { font-weight: 600; padding: 4px 0 14px; }
   .folga-resumo.erro { color: var(--debito); }
@@ -396,7 +401,7 @@
         <button class="icone" type="button" id="diaProx" aria-label="Próximo dia">›</button>
       </div>
       <div class="data-escolha">
-        <button class="btn-texto" type="button" id="btnHoje">Hoje</button>
+        <button class="btn hoje" type="button" id="btnHoje">Hoje</button>
         <input type="date" id="diaData" aria-label="Escolher a data">
       </div>
     </div>
@@ -506,7 +511,7 @@
     <div class="scroll">
       <table>
         <thead>
-          <tr><th>Dia</th><th>Batidas</th><th class="num">Resultado</th><th class="num">Saldo</th><th aria-label="Ações"></th></tr>
+          <tr><th class="sel" aria-label="Dia aberto"></th><th>Dia</th><th>Batidas</th><th class="num">Resultado</th><th class="num">Saldo</th><th aria-label="Ações"></th></tr>
         </thead>
         <tbody id="histBody"></tbody>
       </table>
@@ -1368,7 +1373,9 @@
     $('diaJornada').textContent = cfg.trabalha
       ? `Jornada de ${curto(esperado)}: ${cfg.entrada} às ${alm ? `${cfg.almIni} e ${cfg.almFim} às ` : ''}${cfg.saida}`
       : 'Dia sem expediente. Se trabalhar, tudo conta como hora extra.';
-    $('btnHoje').hidden = data === hoje();
+    // botão Hoje sempre visível; desativado quando já está no dia de hoje
+    $('btnHoje').disabled = data === hoje();
+    $('btnHoje').title = data === hoje() ? 'Você já está no dia de hoje' : 'Voltar para o dia de hoje';
     // aviso de feriado nacional (só em dia de trabalho ainda não lançado)
     const fer = feriadoEm(data);
     $('feriadoAviso').hidden = !(fer && cfg.trabalha && !lancado);
@@ -1594,6 +1601,7 @@
       const cls = h.conta > 0 ? 'pos-t' : h.conta < 0 ? 'neg-t' : '';
       const aberto = h.data === ($('diaData').value || '');
       return `<tr class="${aberto ? 'editando' : ''}">
+        <td class="sel"><input type="checkbox" class="sel-dia" data-data="${h.data}" ${aberto ? 'checked' : ''} aria-label="${aberto ? 'Fechar' : 'Abrir'} ${DIAS[diaSemana(h.data)]}, ${fmtData(h.data)}" title="${aberto ? 'Desmarque para voltar para hoje' : 'Abrir este dia'}"></td>
         <td class="nw"><b>${ABREV[diaSemana(h.data)]}</b> ${fmtData(h.data)}</td>
         <td class="batidas-txt">${textoBatidas(h)}</td>
         <td class="num ${cls}"><b>${h.conta === 0 ? '0' : sinal(h.conta)}</b></td>
@@ -1821,6 +1829,18 @@
   });
 
   $('histMes').addEventListener('change', () => { mesFiltro = $('histMes').value; renderHistorico(); });
+
+  // Caixa de seleção: marcar abre o dia; desmarcar volta para hoje
+  $('histBody').addEventListener('change', e => {
+    const cx = e.target.closest('input.sel-dia');
+    if (!cx) return;
+    if (cx.checked) {
+      irPara(cx.dataset.data);
+      $('diaCard').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    } else {
+      irPara(hoje());
+    }
+  });
 
   $('histBody').addEventListener('click', async e => {
     const ed = e.target.closest('button.editar');
