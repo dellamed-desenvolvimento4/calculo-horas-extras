@@ -78,15 +78,6 @@ Para não perder nada, use **Ajustes → Baixar backup** de vez em quando. O arq
 
 Não precisa instalar nada. Baixe o `index.html` e abra no navegador com dois cliques.
 
-## Publicar no GitHub Pages
-
-1. Crie um repositório público no GitHub e envie o `index.html` (e este `README.md`) para a branch `main`.
-2. No repositório, vá em **Settings → Pages**.
-3. Em **Source**, escolha **Deploy from a branch**. Em **Branch**, escolha `main` e a pasta `/ (root)`. Clique em **Save**.
-4. Depois de 1 a 2 minutos, o site fica disponível em `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`.
-
-A cada novo `git push`, o site é atualizado sozinho.
-
 ## Tecnologia
 
 - Um único arquivo `index.html` com HTML, CSS e JavaScript puros, sem frameworks e sem etapa de build.
