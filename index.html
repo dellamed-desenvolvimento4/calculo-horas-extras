@@ -270,6 +270,95 @@
   .dlg-rodape .btn + .btn { margin-left: 8px; }
   .res-edicao { font-size: 13px; font-weight: 700; color: var(--primaria); margin-bottom: 6px; }
 
+  .c-rot { display: none; }
+
+  /* ---------- telas largas: dia à esquerda, banco (saldo + histórico) à direita ---------- */
+  @media (min-width: 1200px) {
+    .wrap {
+      max-width: 1680px; padding: 0 24px 20px;
+      display: grid; gap: 0 20px;
+      grid-template-columns: minmax(0, 1fr) clamp(390px, 30vw, 500px);
+      grid-template-areas: "topo topo" "aviso aviso" "dia saldo" "dia hist";
+      grid-template-rows: auto auto auto 1fr;
+      align-items: start;
+    }
+    .topo { grid-area: topo; }
+    .boas-vindas { grid-area: aviso; margin: 0 0 14px; }
+    .dia { grid-area: dia; }
+    .saldo {
+      grid-area: saldo; background: var(--folha); border: 1px solid var(--linha); border-radius: var(--raio);
+      padding: 18px 20px; display: block;
+    }
+    .saldo-valor { font-size: clamp(48px, 4.2vw, 68px); }
+    .saldo-desc { font-size: 18px; margin-top: 2px; }
+    .saldo-lado { max-width: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--linha); }
+    .historico {
+      grid-area: hist; margin-top: 16px; background: var(--folha); border: 1px solid var(--linha); border-radius: var(--raio);
+      padding: 16px 0 6px;
+    }
+    .historico .hist-topo { padding: 0 20px; margin-bottom: 12px; }
+    .historico h2 { font-size: 19px; }
+    .hist-topo select { min-width: 0; min-height: 38px; padding: 4px 10px; }
+    .resumo-mes { margin: 0 20px 10px; padding: 12px 14px; background: var(--campo); border: none; }
+    .resumo-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .resumo-item span { font-size: 12px; }
+    .resumo-item b { font-size: 18px; }
+    .resumo-saldo { font-size: 13px; margin-top: 8px; padding-top: 8px; }
+    .historico .sub { display: none; }
+    .historico .vazio { padding: 12px 20px; }
+
+    /* lista compacta: cada dia em duas linhas */
+    .historico thead { display: none; }
+    .historico table, .historico tbody { display: block; }
+    .historico tr {
+      display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto; align-items: center;
+      grid-template-areas: "sel dia acoes res" "sel bat bat saldo";
+      padding: 8px 14px 8px 8px; border-bottom: 1px solid var(--linha); gap: 0 8px;
+    }
+    .historico tr:last-child { border-bottom: none; }
+    .historico td { padding: 0; border: none; background: transparent !important; box-shadow: none !important; }
+    .historico tr.editando { background: var(--primaria-suave); box-shadow: inset 3px 0 0 var(--primaria); }
+    .historico td.sel { grid-area: sel; width: auto; padding-left: 4px; }
+    .historico .c-dia { grid-area: dia; font-size: 15px; }
+    .historico .c-res { grid-area: res; font-size: 15px; }
+    .historico .c-bat { grid-area: bat; font-size: 13px; min-width: 0; }
+    .historico .c-saldo { grid-area: saldo; font-size: 13px; color: var(--grafite); }
+    .historico .c-rot { display: inline; }
+    .historico .c-acoes { grid-area: acoes; }
+    .historico .c-acoes button { font-size: 13px; padding: 2px 4px; }
+    .lancar { grid-template-columns: 1fr 1fr; }
+    .lancar .btn { white-space: normal; min-width: 0; padding: 4px 10px; line-height: 1.25; }
+    .resultado { overflow-x: hidden; }
+    .lancar > :not(#btnNormal):not(#btnFolga) { grid-column: 1 / -1; }
+  }
+
+  /* telas largas e altas: tudo cabe na tela, sem rolar a página */
+  @media (min-width: 1200px) and (min-height: 800px) {
+    html, body { height: 100%; overflow: hidden; }
+    .wrap { height: 100dvh; height: 100vh; height: 100dvh; grid-template-rows: auto auto auto minmax(0, 1fr); }
+    .dia { grid-row: 3 / 5; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .dia-topo { padding: 14px 20px 10px; }
+    .regua-box { padding-bottom: 12px; }
+    .regua { height: 38px; }
+    .seg { top: 6px; bottom: 6px; }
+    .seg.alm { top: 13px; bottom: 13px; }
+    .seg.fora { top: 10px; bottom: 10px; }
+    .dia-corpo { flex: 1; min-height: 0; }
+    .batidas, .resultado { overflow-y: auto; min-height: 0; padding-top: 16px; padding-bottom: 16px; }
+    .res-grande { font-size: 38px; }
+    .horarios-box { margin-top: 12px; }
+    .horarios li { padding: 7px 0; }
+    .resultado { padding-bottom: 0; }
+    /* botões de lançar sempre visíveis no rodapé da coluna */
+    .lancar {
+      position: sticky; bottom: 0; z-index: 1; margin-top: 12px; padding: 12px 0 16px;
+      background: var(--folha); border-top: 1px solid var(--linha); gap: 8px;
+    }
+    .lancar .btn { min-height: 42px; }
+    .historico { min-height: 0; height: calc(100% - 16px); display: flex; flex-direction: column; }
+    .historico .scroll { flex: 1; min-height: 0; overflow-y: auto; }
+  }
+
   /* ---------- janelas ---------- */
   dialog {
     width: min(680px, calc(100% - 24px)); max-height: calc(100% - 32px); padding: 0; border: none; border-radius: 18px;
@@ -1602,11 +1691,11 @@
       const aberto = h.data === ($('diaData').value || '');
       return `<tr class="${aberto ? 'editando' : ''}">
         <td class="sel"><input type="checkbox" class="sel-dia" data-data="${h.data}" ${aberto ? 'checked' : ''} aria-label="${aberto ? 'Fechar' : 'Abrir'} ${DIAS[diaSemana(h.data)]}, ${fmtData(h.data)}" title="${aberto ? 'Desmarque para voltar para hoje' : 'Abrir este dia'}"></td>
-        <td class="nw"><b>${ABREV[diaSemana(h.data)]}</b> ${fmtData(h.data)}</td>
-        <td class="batidas-txt">${textoBatidas(h)}</td>
-        <td class="num ${cls}"><b>${h.conta === 0 ? '0' : sinal(h.conta)}</b></td>
-        <td class="num">${h.saldoApos === 0 ? '0' : sinal(h.saldoApos)}</td>
-        <td class="num nw"><button class="editar" type="button" data-data="${h.data}" aria-label="Editar o lançamento de ${fmtData(h.data)}">Editar</button><button class="excluir" type="button" data-data="${h.data}" aria-label="Excluir o lançamento de ${fmtData(h.data)}">Excluir</button></td>
+        <td class="nw c-dia"><b>${ABREV[diaSemana(h.data)]}</b> ${fmtData(h.data)}</td>
+        <td class="batidas-txt c-bat">${textoBatidas(h)}</td>
+        <td class="num c-res ${cls}"><b>${h.conta === 0 ? '0' : sinal(h.conta)}</b></td>
+        <td class="num c-saldo"><span class="c-rot">saldo </span>${h.saldoApos === 0 ? '0' : sinal(h.saldoApos)}</td>
+        <td class="num nw c-acoes"><button class="editar" type="button" data-data="${h.data}" aria-label="Editar o lançamento de ${fmtData(h.data)}">Editar</button><button class="excluir" type="button" data-data="${h.data}" aria-label="Excluir o lançamento de ${fmtData(h.data)}">Excluir</button></td>
       </tr>`;
     }).join('');
   }
