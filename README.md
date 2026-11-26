@@ -15,6 +15,8 @@ Você preenche a entrada, o almoço e a saída. O site mostra na hora:
 - **Saldo do banco de horas** sempre visível no topo, atualizado a cada dia lançado.
 - **Batidas do ponto**: entrada, saída para almoço, volta do almoço e saída. O botão *Marcar agora* coloca a hora atual na próxima batida vazia.
 - **Saídas no meio do expediente** (médico, banco…): o tempo fora é descontado do dia.
+- **Trabalho fora do horário** (antes da entrada, depois da saída ou à noite): o período conta inteiro como hora extra.
+- **Horário especial por data**: muda o horário de um dia só, como meio expediente nas vésperas de Natal e Ano Novo, que o site já sugere.
 - **Régua do dia**: linha do tempo com o tempo trabalhado, o almoço, as saídas e o que falta trabalhar.
 - **Horários de saída**: a que horas sair para fechar a jornada, para não mexer no saldo, para começar a gerar hora extra ou para usar todo o saldo.
 - **Tolerância configurável**:

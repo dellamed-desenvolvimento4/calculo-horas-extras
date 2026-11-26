@@ -146,6 +146,7 @@
   .seg.prev { background: repeating-linear-gradient(-45deg, var(--primaria-suave) 0 5px, transparent 5px 10px); border: 1.5px dashed var(--primaria); }
   .seg.alm { background: var(--almoco); top: 16px; bottom: 16px; }
   .seg.fora { background: var(--fora); top: 12px; bottom: 12px; }
+  .seg.extra { background: var(--credito); }
   .seg.fantasma { border: 1.5px dashed var(--almoco); background: transparent; }
   .agora { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--debito); }
   .bandeira {
@@ -189,6 +190,10 @@
   .extra label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
   .extra-info { grid-column: 2 / 4; font-size: 13px; color: var(--grafite); }
   .extra-info.erro { color: var(--debito); }
+  .extra-info.alerta { color: var(--fora); }
+  .extra-info .btn-texto { padding: 0 2px; font-size: 13px; }
+  .extra.trab .extra-n { background: var(--credito-suave); color: var(--credito); }
+  .extra.trab .extra-info { color: var(--credito); }
   .extra .icone { width: 40px; height: 44px; border-radius: var(--raio-p); font-size: 15px; }
 
   /* resultado */
@@ -288,6 +293,16 @@
   .btn.hoje { min-height: 38px; padding: 0 14px; }
   .btn.hoje:disabled { opacity: 1; color: var(--grafite); background: var(--campo); cursor: default; }
   .normal-tag.folga-tag { background: var(--fora-suave); color: var(--fora); }
+  .normal-tag.especial-tag { background: var(--primaria-suave); color: var(--primaria); }
+  .normal-tag.extra-tag { background: var(--credito-suave); color: var(--credito); }
+  .esp-rapidas { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .esp-rapidas .btn { min-height: 38px; }
+  .esp-grid { margin-top: 4px; }
+  .esp-remover { margin-right: auto; color: var(--debito); }
+  .lista-especiais { list-style: none; padding: 0; margin: 0; }
+  .lista-especiais li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--linha); font-size: 15px; }
+  .lista-especiais li:last-child { border-bottom: none; }
+  .lista-especiais small { display: block; color: var(--grafite); font-size: 13px; }
   .folga-resumo { font-weight: 600; padding: 4px 0 14px; }
   .folga-resumo.erro { color: var(--debito); }
   .dlg-rodape .btn + .btn { margin-left: 8px; }
@@ -526,7 +541,7 @@
         <button class="icone" type="button" id="diaAnt" aria-label="Dia anterior">‹</button>
         <div>
           <h2 id="diaTitulo"></h2>
-          <p class="dia-jornada"><span id="diaJornada"></span> <button class="btn-texto mini" type="button" data-abrir="ajustes" data-secao="ajHorario">Alterar</button></p>
+          <p class="dia-jornada"><span id="diaJornada"></span> <button class="btn-texto mini" type="button" id="btnEspecial" title="Mudar o horário só desta data, como véspera de feriado">Mudar só este dia</button></p>
         </div>
         <button class="icone" type="button" id="diaProx" aria-label="Próximo dia">›</button>
       </div>
@@ -550,6 +565,7 @@
         <span><i style="background:var(--primaria)"></i>Trabalhando</span>
         <span><i style="background:var(--almoco)"></i>Almoço</span>
         <span><i style="background:var(--fora)"></i>Saída no expediente</span>
+        <span><i style="background:var(--credito)"></i>Trabalho extra</span>
         <span><i style="border:1.5px dashed var(--primaria);background:var(--primaria-suave)"></i>Falta trabalhar</span>
       </div>
     </div>
@@ -593,6 +609,15 @@
           </div>
           <p class="saidas-vazio" id="saidasVazio">Foi ao médico ou ao banco e voltou? Adicione a saída aqui. O tempo fora é descontado.</p>
           <div id="extras"></div>
+        </div>
+
+        <div class="saidas">
+          <div class="saidas-topo">
+            <h3>Trabalho fora do horário</h3>
+            <button class="btn-texto" type="button" id="btnTrabalho">+ Adicionar período</button>
+          </div>
+          <p class="saidas-vazio" id="trabalhosVazio">Chegou mais cedo, ficou depois ou voltou a trabalhar à noite? Adicione o período aqui. Ele conta inteiro como hora extra.</p>
+          <div id="trabalhos"></div>
         </div>
       </div>
 
@@ -705,6 +730,12 @@
         </div>
       </section>
 
+      <section id="ajEspeciais">
+        <h3>Horários especiais</h3>
+        <p class="ajuda">Dias com horário diferente do padrão, como meio expediente em véspera de feriado. Para criar, abra o dia e clique em <b>Mudar só este dia</b>.</p>
+        <ul class="lista-especiais" id="listaEspeciais"></ul>
+      </section>
+
       <section>
         <h3>Feriados nacionais</h3>
         <label class="opcao">
@@ -780,6 +811,10 @@
           <dd>Preencha a entrada (e o almoço, se for voltar). Em <b>Horários de saída</b>, a linha <b>Usa todo o saldo</b> diz a que horas sair.</dd>
           <dt>Saí no meio do expediente e voltei</dt>
           <dd>Em <b>Saídas no meio do expediente</b>, clique em <b>Adicionar saída</b> e coloque a hora em que saiu e a hora em que voltou. O tempo fora é descontado.</dd>
+          <dt>Trabalhei fora do horário (antes, depois ou à noite)</dt>
+          <dd>Em <b>Trabalho fora do horário</b>, clique em <b>Adicionar período</b> e coloque o início e o fim. O período conta inteiro como hora extra. Se você colocar por engano um horário fora do expediente em <b>Saídas</b>, o site avisa e oferece o botão <b>Mover para trabalho extra</b>.</dd>
+          <dt>Um dia com horário diferente (meio expediente, véspera de feriado)</dt>
+          <dd>Abra o dia e clique em <b>Mudar só este dia</b>, ao lado da jornada. Defina o horário daquela data; o botão <b>Só a manhã</b> já preenche meio expediente. A jornada e a tolerância do dia passam a usar esse horário. Nas vésperas de Natal e Ano Novo, o site já sugere o ajuste. Os horários especiais ficam listados em <b>Ajustes</b>.</dd>
           <dt>Saí e não voltei mais</dt>
           <dd>Deixe em branco as batidas seguintes. Por exemplo, saiu às 10:00 da manhã: coloque 10:00 em <b>Saída para almoço</b> e deixe a volta e a saída vazias.</dd>
           <dt>Não bato o ponto do almoço</dt>
@@ -838,6 +873,40 @@
     </div>
     <div class="dlg-rodape">
       <button class="btn primario" value="ok">Entendi</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Horário especial de um dia -->
+<dialog id="dlgEspecial" aria-labelledby="espTitulo">
+  <form method="dialog" id="formEspecial">
+    <div class="dlg-topo">
+      <h2 id="espTitulo">Horário especial</h2>
+      <button class="icone" value="fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="dlg-corpo">
+      <section>
+        <p class="ajuda" id="espData"></p>
+        <div class="esp-rapidas">
+          <button class="btn" type="button" id="espManha">Só a manhã</button>
+          <button class="btn" type="button" id="espPadrao">Começar do horário padrão</button>
+        </div>
+        <div class="batidas-grid esp-grid">
+          <div class="batida"><label for="espEntrada">Entrada</label><input type="time" id="espEntrada"></div>
+          <div class="batida"><label for="espAlmIni">Saída para almoço</label><input type="time" id="espAlmIni"></div>
+          <div class="batida"><label for="espAlmFim">Volta do almoço</label><input type="time" id="espAlmFim"></div>
+          <div class="batida"><label for="espSaida">Saída</label><input type="time" id="espSaida"></div>
+        </div>
+        <p class="ajuda" style="margin:8px 0 14px">Sem almoço neste dia? Deixe a saída e a volta do almoço em branco.</p>
+        <label class="rot" for="espMotivo">Motivo (opcional)</label>
+        <input type="text" id="espMotivo" maxlength="40" placeholder="Ex.: véspera de Natal">
+      </section>
+      <p class="folga-resumo" id="espResumo" role="status"></p>
+    </div>
+    <div class="dlg-rodape">
+      <button class="btn-texto esp-remover" type="button" id="espRemover" hidden>Voltar ao horário padrão</button>
+      <button class="btn" value="fechar">Cancelar</button>
+      <button class="btn primario" type="button" id="espSalvar">Salvar horário</button>
     </div>
   </form>
 </dialog>
@@ -1027,10 +1096,19 @@
 
   function lerDia() {
     const v = id => parseHM($(id).value);
-    const extras = [...document.querySelectorAll('#extras .extra')].map(el => ({
+    const lerLista = sel => [...document.querySelectorAll(sel)].map(el => ({
       el, s: parseHM(el.querySelector('[data-x=s]').value), r: parseHM(el.querySelector('[data-x=r]').value),
     }));
-    return { ent: v('bEntrada'), ai: v('bAlmIni'), af: v('bAlmFim'), sa: v('bSaida'), extras };
+    return {
+      ent: v('bEntrada'), ai: v('bAlmIni'), af: v('bAlmFim'), sa: v('bSaida'),
+      extras: lerLista('#extras .extra'), trabalhos: lerLista('#trabalhos .extra'),
+    };
+  }
+
+  // Minutos de trabalho extra que ficam fora do expediente principal (entre entrada e saída)
+  function tempoForaDoExpediente(trabalhos, ent, fim) {
+    return (trabalhos || []).reduce((t, x) =>
+      t + Math.max(0, Math.min(x.r, ent) - x.s) + Math.max(0, x.r - Math.max(x.s, fim)), 0);
   }
 
   // Interpreta as batidas: ausências, fim do dia e erros
@@ -1075,6 +1153,15 @@
     }
     if (fim != null && fim <= d.ent) err('A saída precisa ser depois da entrada.');
 
+    // trabalho fora do horário: conta inteiro como hora extra
+    const trabalhos = [];
+    (d.trabalhos || []).forEach((x, i) => {
+      if (x.s == null && x.r == null) return;
+      if (x.s == null || x.r == null) err(`No trabalho extra ${i + 1}, preencha o início e o fim.`);
+      else if (x.r <= x.s) err(`No trabalho extra ${i + 1}, o fim precisa ser depois do início.`);
+      else trabalhos.push({ s: x.s, r: x.r });
+    });
+
     // Para prever a saída: se saiu para o almoço e não voltou ainda, supõe volta no horário padrão
     let ausPrev = aus, aiPrev = d.ai, afPrev = d.af;
     if (d.ai != null && d.af == null) {
@@ -1085,7 +1172,13 @@
       ausPrev = [...aus, { ...almP }];
     }
     const extrasOk = d.extras.filter(x => x.s != null && x.r != null && x.r > x.s);
-    return { ent: d.ent, ai: d.ai, af: d.af, fim, motivo, aus, ausPrev, aiPrev, afPrev, erro, almocoAuto, extrasOk };
+    return { ent: d.ent, ai: d.ai, af: d.af, fim, motivo, aus, ausPrev, aiPrev, afPrev, erro, almocoAuto, extrasOk, trabalhos };
+  }
+
+  // Horário de saída que fecha a jornada (considera almoço, saídas e trabalho extra)
+  function saidaFecha(an, cfg, esperado) {
+    for (let S = an.ent + 1; S <= an.ent + 20 * 60; S++) if (calcular(an, cfg, S).trabalhado >= esperado) return S;
+    return an.ent + esperado;
   }
 
   const tolAtual = () => st.regra === 'batida' ? st.tolBatida : st.tolerancia;
@@ -1096,7 +1189,8 @@
     const fim = prever ? S : an.fim;
     const aus = prever ? an.ausPrev : an.aus;
     const esperado = esperadoDia(cfg);
-    const trab = trabalhadoEntre(an.ent, fim, aus);
+    const extra = tempoForaDoExpediente(an.trabalhos, an.ent, fim);
+    const trab = trabalhadoEntre(an.ent, fim, aus) + extra;
     const diferenca = trab - esperado;
     const det = [];
     let conta;
@@ -1115,48 +1209,67 @@
       const ignorado = det.filter(x => !x.conta).reduce((s, x) => s + x.dev, 0);
       conta = diferenca - ignorado;
     }
-    return { esperado, trabalhado: trab, diferenca, conta, det };
+    return { esperado, trabalhado: trab, diferenca, conta, det, extra };
   }
 
   // ---------- lançamentos salvos ----------
   function dadosDeLancamento(h) {
     if (h.batidas) { // formato antigo
       const b = h.batidas;
-      const d = { entrada: b[0], saida: b[b.length - 1], almIni: '', almFim: '', extras: [] };
+      const d = { entrada: b[0], saida: b[b.length - 1], almIni: '', almFim: '', extras: [], trabalhos: [] };
       if (b.length >= 4) {
         d.almIni = b[1]; d.almFim = b[2];
         for (let i = 3; i + 1 < b.length - 1; i += 2) d.extras.push([b[i], b[i + 1]]);
       }
       return d;
     }
-    return { entrada: h.entrada || '', almIni: h.almIni || '', almFim: h.almFim || '', saida: h.saida || '', extras: h.extras || [] };
+    return {
+      entrada: h.entrada || '', almIni: h.almIni || '', almFim: h.almFim || '', saida: h.saida || '',
+      extras: h.extras || [], trabalhos: h.trabalhos || [],
+    };
   }
   const paraCalculo = o => ({
     ent: parseHM(o.entrada), ai: parseHM(o.almIni), af: parseHM(o.almFim), sa: parseHM(o.saida),
     extras: o.extras.map(([s, r]) => ({ s: parseHM(s), r: parseHM(r) })),
+    trabalhos: (o.trabalhos || []).map(([s, r]) => ({ s: parseHM(s), r: parseHM(r) })),
   });
   // Recalcula os lançamentos com a regra atual e ajusta o saldo pela diferença
   function recalcularHistorico() {
     let delta = 0;
     st.historico.forEach(h => {
       if (h.normal || h.folga) return;
-      const cfg = st.semana[diaSemana(h.data)];
-      const an = analisar(paraCalculo(dadosDeLancamento(h)), cfg);
-      if (an.vazio || an.erro || an.fim == null) return;
-      const novo = calcular(an, cfg).conta;
-      delta += novo - h.conta;
-      h.conta = novo;
+      delta += recalcularLancamento(h);
     });
     st.saldo += delta;
     return delta;
   }
+  // Recalcula um lançamento com o horário daquele dia; devolve quanto o resultado mudou (não mexe no saldo)
+  function recalcularLancamento(h) {
+    if (h.normal) return 0;
+    const cfg = cfgDaData(h.data);
+    let novo;
+    if (h.folga) novo = h.folga === 'banco' ? -esperadoDia(cfg) : 0;
+    else {
+      const an = analisar(paraCalculo(dadosDeLancamento(h)), cfg);
+      if (an.vazio || an.erro || an.fim == null) return 0;
+      novo = calcular(an, cfg).conta;
+    }
+    const delta = novo - h.conta;
+    h.conta = novo;
+    return delta;
+  }
 
-  const cfgDoDia = () => st.semana[diaSemana($('diaData').value || hoje())];
+  // Horário do dia: o especial daquela data, se houver; senão, o padrão do dia da semana
+  function cfgDaData(iso) {
+    const e = st.especiais && st.especiais[iso];
+    return e ? { trabalha: true, ...e, especial: true } : st.semana[diaSemana(iso)];
+  }
+  const cfgDoDia = () => cfgDaData($('diaData').value || hoje());
   function proximoDiaUtil(iso) {
     const dt = dateDe(iso);
     for (let i = 0; i < 7; i++) {
       dt.setDate(dt.getDate() + 1);
-      if (st.semana[dt.getDay()].trabalha) break;
+      if (cfgDaData(isoDe(dt)).trabalha) break;
     }
     return isoDe(dt);
   }
@@ -1183,6 +1296,9 @@
     fixo('11-15', 'Proclamação da República');
     if (y >= 2024) fixo('11-20', 'Dia da Consciência Negra');
     fixo('12-25', 'Natal');
+    // vésperas: não são feriado, mas costumam ter meio expediente
+    f[`${y}-12-24`] = { nome: 'Véspera de Natal', vespera: true };
+    f[`${y}-12-31`] = { nome: 'Véspera de Ano Novo', vespera: true };
     const p = pascoa(y);
     const movel = (n, nome, facultativo) => { const d = new Date(p); d.setDate(d.getDate() + n); f[isoDe(d)] = { nome, facultativo }; };
     movel(-48, 'Carnaval', true);
@@ -1201,37 +1317,47 @@
   }
 
   // ---------- campos do dia ----------
-  function adicionarExtra(s = '', r = '') {
+  // Duas listas de períodos: saídas no expediente (descontam) e trabalho fora do horário (contam como extra)
+  const LISTAS = {
+    extras: { rotS: 'Saí às', rotR: 'Voltei às', nome: 'Saída', id: 'extra', vazio: 'saidasVazio' },
+    trabalhos: { rotS: 'Comecei às', rotR: 'Terminei às', nome: 'Trabalho extra', id: 'trab', vazio: 'trabalhosVazio' },
+  };
+  function adicionarPeriodo(lista, s = '', r = '') {
+    const L = LISTAS[lista];
     const div = document.createElement('div');
-    div.className = 'extra';
+    div.className = 'extra' + (lista === 'trabalhos' ? ' trab' : '');
     div.innerHTML = `
       <span class="extra-n" aria-hidden="true"></span>
-      <div><label>Saí às</label><input type="time" data-x="s" value="${s}"></div>
-      <div><label>Voltei às</label><input type="time" data-x="r" value="${r}"></div>
-      <button class="icone" type="button" data-remover title="Remover esta saída">✕</button>
+      <div><label>${L.rotS}</label><input type="time" data-x="s" value="${s}"></div>
+      <div><label>${L.rotR}</label><input type="time" data-x="r" value="${r}"></div>
+      <button class="icone" type="button" data-remover title="Remover">✕</button>
       <span class="extra-info"></span>`;
-    $('extras').appendChild(div);
+    $(lista).appendChild(div);
     numerarExtras();
     return div;
   }
+  const adicionarExtra = (s, r) => adicionarPeriodo('extras', s, r);
   function numerarExtras() {
-    const linhas = [...document.querySelectorAll('#extras .extra')];
-    linhas.forEach((el, i) => {
-      const n = i + 1;
-      el.querySelector('.extra-n').textContent = n;
-      const [ls, lr] = el.querySelectorAll('label');
-      const [is, ir] = el.querySelectorAll('input');
-      is.id = `extraS${n}`; ir.id = `extraR${n}`;
-      ls.htmlFor = is.id; lr.htmlFor = ir.id;
-      is.setAttribute('aria-label', `Saída ${n}: hora em que saiu`);
-      ir.setAttribute('aria-label', `Saída ${n}: hora em que voltou`);
-      el.querySelector('[data-remover]').setAttribute('aria-label', `Remover saída ${n}`);
+    Object.entries(LISTAS).forEach(([lista, L]) => {
+      const linhas = [...document.querySelectorAll(`#${lista} .extra`)];
+      linhas.forEach((el, i) => {
+        const n = i + 1;
+        el.querySelector('.extra-n').textContent = n;
+        const [ls, lr] = el.querySelectorAll('label');
+        const [is, ir] = el.querySelectorAll('input');
+        is.id = `${L.id}S${n}`; ir.id = `${L.id}R${n}`;
+        ls.htmlFor = is.id; lr.htmlFor = ir.id;
+        is.setAttribute('aria-label', `${L.nome} ${n}: ${L.rotS.toLowerCase()}`);
+        ir.setAttribute('aria-label', `${L.nome} ${n}: ${L.rotR.toLowerCase()}`);
+        el.querySelector('[data-remover]').setAttribute('aria-label', `Remover ${L.nome.toLowerCase()} ${n}`);
+      });
+      $(L.vazio).hidden = linhas.length > 0;
     });
-    $('saidasVazio').hidden = linhas.length > 0;
   }
   function limparCampos() {
     Object.keys(CAMPOS).forEach(id => $(id).value = '');
     $('extras').innerHTML = '';
+    $('trabalhos').innerHTML = '';
     numerarExtras();
   }
   function preencherPadrao() {
@@ -1256,6 +1382,7 @@
     $('bAlmFim').value = d.almFim || '';
     $('bSaida').value = d.saida || '';
     (d.extras || []).forEach(([s, r]) => adicionarExtra(s || '', r || ''));
+    (d.trabalhos || []).forEach(([s, r]) => adicionarPeriodo('trabalhos', s || '', r || ''));
   }
 
   // ---------- render: saldo e ajustes ----------
@@ -1297,6 +1424,7 @@
     $('cfgSinal').value = st.saldo < 0 ? '-1' : '1';
     $('cfgSaldo').value = dur(st.saldo);
     $('cfgFeriados').checked = st.feriados !== false;
+    renderListaEspeciais();
     $('infoBackup').textContent = st.ultimoBackup
       ? `Último backup baixado em ${fmtData(st.ultimoBackup)}.`
       : 'Você ainda não baixou nenhum backup.';
@@ -1393,8 +1521,9 @@
     const temDia = an && !an.vazio;
     const fimTrab = temDia ? (an.fim != null && !an.erro ? an.fim : fimPrev) : null;
 
-    const inicios = [pE, temDia ? an.ent : null].filter(v => v != null);
-    const fins = [pS, fimTrab].filter(v => v != null);
+    const trabs = temDia ? an.trabalhos : [];
+    const inicios = [pE, temDia ? an.ent : null, ...trabs.map(x => x.s)].filter(v => v != null);
+    const fins = [pS, fimTrab, ...trabs.map(x => x.r)].filter(v => v != null);
     const ini = Math.floor((inicios.length ? Math.min(...inicios) : 6 * 60) / 60) * 60;
     let fim = Math.ceil((fins.length ? Math.max(...fins) : 18 * 60) / 60) * 60;
     if (fim - ini < 4 * 60) fim = ini + 4 * 60;
@@ -1438,11 +1567,16 @@
         const a = Math.max(x.a, an.ent), b = Math.min(x.b, fimTrab);
         if (b > a) segs.push([x.tipo, a, b]);
       });
+      // trabalho fora do horário: só a parte fora do expediente
+      trabs.forEach(x => {
+        if (x.s < an.ent) segs.push(['extra', x.s, Math.min(x.r, an.ent)]);
+        if (x.r > fimTrab) segs.push(['extra', Math.max(x.s, fimTrab), x.r]);
+      });
       const pf = pct(fimTrab);
       const tx = pf > 88 ? 'translateX(-100%)' : pf < 12 ? 'none' : 'translateX(-50%)';
       bandeiras += `<span class="bandeira" style="left:${P(fimTrab)};transform:${tx}">${prevendo ? 'sair' : 'saída'} ${clock(fimTrab)}</span>`;
     }
-    const nomes = { trab: 'Trabalhando', prev: 'Falta trabalhar', alm: 'Almoço', fora: 'Saída no expediente', fantasma: 'Jornada padrão' };
+    const nomes = { trab: 'Trabalhando', prev: 'Falta trabalhar', alm: 'Almoço', fora: 'Saída no expediente', fantasma: 'Jornada padrão', extra: 'Trabalho extra' };
     html += segs.map(([c, a, b]) =>
       `<div class="seg ${c}" style="left:${P(a)};width:${L(a, b)}" title="${nomes[c]}: ${clock(a)} às ${clock(b)}"></div>`).join('');
 
@@ -1470,17 +1604,41 @@
   }
 
   // ---------- render: dia ----------
-  function renderExtrasInfo(d) {
+  function renderExtrasInfo(d, an) {
+    const ent = an && !an.vazio ? an.ent : null;
+    const fim = an && !an.vazio && an.fim != null && !an.motivo ? an.fim : null;
     d.extras.forEach(x => {
       const el = x.el.querySelector('.extra-info');
       const ri = x.el.querySelector('[data-x=r]');
       const invalido = x.s != null && x.r != null && x.r <= x.s;
       ri.classList.toggle('invalido', invalido);
-      el.classList.toggle('erro', invalido);
-      if (invalido) el.textContent = 'A volta precisa ser depois da saída.';
-      else if (x.s != null && x.r != null) el.textContent = `${curto(x.r - x.s)} fora, descontado do dia.`;
-      else if (x.s != null) el.textContent = 'Sem volta: o dia termina nesse horário.';
+      el.classList.remove('erro', 'alerta');
+      if (invalido) { el.classList.add('erro'); el.textContent = 'A volta precisa ser depois da saída.'; return; }
+      if (x.s != null && x.r != null) {
+        // saída que fica fora do expediente não desconta nada: provavelmente é trabalho extra
+        const foraDoDia = (fim != null && x.s >= fim) || (ent != null && x.r <= ent);
+        if (foraDoDia) {
+          el.classList.add('alerta');
+          el.innerHTML = 'Fora do seu expediente, não desconta nada. Trabalhou nesse horário? <button type="button" class="btn-texto" data-mover>Mover para trabalho extra</button>';
+          return;
+        }
+        const dentro = Math.max(0, Math.min(x.r, fim ?? x.r) - Math.max(x.s, ent ?? x.s));
+        el.textContent = `${curto(dentro)} fora, descontado do dia.`;
+      } else if (x.s != null) el.textContent = 'Sem volta: o dia termina nesse horário.';
       else el.textContent = '';
+    });
+    (d.trabalhos || []).forEach(x => {
+      const el = x.el.querySelector('.extra-info');
+      const ri = x.el.querySelector('[data-x=r]');
+      const invalido = x.s != null && x.r != null && x.r <= x.s;
+      ri.classList.toggle('invalido', invalido);
+      el.classList.toggle('erro', invalido);
+      if (invalido) { el.textContent = 'O fim precisa ser depois do início.'; return; }
+      if (x.s == null || x.r == null) { el.textContent = ''; return; }
+      const conta = ent != null ? tempoForaDoExpediente([x], ent, fim ?? ent) : x.r - x.s;
+      el.textContent = conta === x.r - x.s || fim == null
+        ? `${curto(x.r - x.s)} a mais, conta como hora extra.`
+        : `Parte já está dentro do expediente. Conta como extra só o que fica fora: ${curto(conta)}.`;
     });
   }
 
@@ -1501,19 +1659,26 @@
 
     $('diaTitulo').textContent = dataLonga(data);
     const alm = almocoPadrao(cfg);
-    $('diaJornada').textContent = cfg.trabalha
-      ? `Jornada de ${curto(esperado)}: ${cfg.entrada} às ${alm ? `${cfg.almIni} e ${cfg.almFim} às ` : ''}${cfg.saida}`
-      : 'Dia sem expediente. Se trabalhar, tudo conta como hora extra.';
+    const horarioTxt = `${cfg.entrada} às ${alm ? `${cfg.almIni} e ${cfg.almFim} às ` : ''}${cfg.saida}`;
+    $('diaJornada').innerHTML = cfg.especial
+      ? `<span class="normal-tag especial-tag">Horário especial</span>${cfg.motivo ? `${esc(cfg.motivo)}: ` : ''}jornada de ${curto(esperado)}, ${horarioTxt}`
+      : cfg.trabalha
+        ? `Jornada de ${curto(esperado)}: ${horarioTxt}`
+        : 'Dia sem expediente. Se trabalhar, tudo conta como hora extra.';
+    $('btnEspecial').textContent = cfg.especial ? 'Alterar horário especial' : 'Mudar só este dia';
     // botão Hoje sempre visível; desativado quando já está no dia de hoje
     $('btnHoje').disabled = data === hoje();
     $('btnHoje').title = data === hoje() ? 'Você já está no dia de hoje' : 'Voltar para o dia de hoje';
     // aviso de feriado nacional (só em dia de trabalho ainda não lançado)
     const fer = feriadoEm(data);
-    $('feriadoAviso').hidden = !(fer && cfg.trabalha && !lancado);
+    $('feriadoAviso').hidden = !(fer && cfg.trabalha && !lancado && !(fer.vespera && cfg.especial));
     if (fer) {
-      $('feriadoTexto').innerHTML = fer.facultativo
-        ? `<b>${fer.nome}</b> é ponto facultativo. Se a empresa deu folga, lance como feriado; se trabalhou, preencha as batidas normalmente.`
-        : `<b>Feriado nacional: ${fer.nome}.</b> Se não trabalhou, lance como feriado. O saldo não muda.`;
+      $('feriadoTexto').innerHTML = fer.vespera
+        ? `<b>${fer.nome}.</b> Se a empresa tiver meio expediente, ajuste o horário só deste dia para a conta sair certa.`
+        : fer.facultativo
+          ? `<b>${fer.nome}</b> é ponto facultativo. Se a empresa deu folga, lance como feriado; se trabalhou, preencha as batidas normalmente.`
+          : `<b>Feriado nacional: ${fer.nome}.</b> Se não trabalhou, lance como feriado. O saldo não muda.`;
+      $('btnLancarFeriado').textContent = fer.vespera ? 'Ajustar horário do dia' : 'Lançar feriado';
     }
     document.querySelectorAll('[data-pd]').forEach(el => {
       const v = cfg[el.dataset.pd];
@@ -1521,8 +1686,8 @@
     });
 
     const d = lerDia();
-    renderExtrasInfo(d);
     const an = analisar(d, cfg);
+    renderExtrasInfo(d, an);
     const cartao = $('resCartao');
     $('detalheBox').hidden = true;
     let pronto = false;
@@ -1560,7 +1725,7 @@
       cartao.className = 'res-cartao';
       cartao.innerHTML = selo + (esperado > 0
         ? `<p class="res-rotulo">Dia em andamento</p>
-           <p class="res-grande">${clock(saidaPara(an.ent, esperado, an.ausPrev))}</p>
+           <p class="res-grande">${clock(saidaFecha(an, cfg, esperado))}</p>
            <p class="res-texto">é a hora de sair para fechar a jornada de ${curto(esperado)}.</p>`
         : `<p class="res-rotulo">Dia sem expediente</p>
            <p class="res-texto">Todo o tempo trabalhado hoje conta como hora extra. Preencha a saída para ver o total.</p>`);
@@ -1589,7 +1754,7 @@
       : lancado ? 'Este dia já foi lançado. Lançar de novo substitui o anterior.' : '';
 
     renderHorarios(an, cfg, esperado, base);
-    renderRegua(an, esperado > 0 ? saidaPara(an.ent, esperado, an.ausPrev) : null, cfg);
+    renderRegua(an, esperado > 0 ? saidaFecha(an, cfg, esperado) : null, cfg);
   }
 
   // Horários de saída: simula a saída minuto a minuto, mantendo as outras batidas
@@ -1603,7 +1768,7 @@
 
     const itens = []; // [texto, horário, detalhe]
     if (esperado > 0) {
-      itens.push(['Fecha a jornada', clock(saidaPara(an.ent, esperado, an.ausPrev)), `${curto(esperado)} trabalhadas`]);
+      itens.push(['Fecha a jornada', clock(saidaFecha(an, cfg, esperado)), `${curto(esperado)} trabalhadas`]);
       const z1 = primeiro(c => c === 0), z2 = ultimo(c => c === 0);
       if (z1 != null) itens.push(['Não mexe no saldo', z1 === z2 ? clock(z1) : `${clock(z1)} a ${clock(z2)}`, '']);
       else itens.push(['Não mexe no saldo', '—', 'nenhum horário dá exatamente zero']);
@@ -1641,10 +1806,16 @@
       linhas.push(`<li><span>${x.nome} ${clock(x.real)}</span>${val}<span class="q">${quando}${regra}</span></li>`);
     });
     an.extrasOk.forEach(x => {
-      if (an.fim != null && x.s >= an.fim) return;
-      const fora = Math.min(x.r, an.fim) - x.s;
+      const fora = Math.max(0, Math.min(x.r, an.fim) - Math.max(x.s, an.ent));
+      if (!fora) return; // fora do expediente: não desconta
       soma -= fora;
       linhas.push(`<li><span>Saída ${clock(x.s)} a ${clock(x.r)}</span><b class="neg-t">${sinal(-fora)}</b><span class="q">tempo fora conta inteiro</span></li>`);
+    });
+    an.trabalhos.forEach(x => {
+      const mais = tempoForaDoExpediente([x], an.ent, an.fim);
+      if (!mais) return;
+      soma += mais;
+      linhas.push(`<li><span>Trabalho extra ${clock(x.s)} a ${clock(x.r)}</span><b class="pos-t">${sinal(mais)}</b><span class="q">fora do horário, conta inteiro</span></li>`);
     });
     const resto = r.conta - soma;
     if (resto !== 0) {
@@ -1673,6 +1844,8 @@
     else if (h.almIni) t = `${h.entrada} a ${h.almIni} (não voltou)`;
     else t = `${h.entrada} a ${h.saida || '?'}`;
     (h.extras || []).forEach(([s, r]) => { t += r ? `; fora de ${s} a ${r}` : `; saiu ${s} e não voltou`; });
+    (h.trabalhos || []).forEach(([s, r]) => { t += `; extra de ${s} a ${r}`; });
+    if (cfgDaData(h.data).especial) t = `<span class="normal-tag especial-tag">Especial</span>${t}`;
     return t;
   }
 
@@ -1779,6 +1952,7 @@
       st: JSON.stringify(st), data: $('diaData').value, editando,
       campos: Object.keys(CAMPOS).map(id => $(id).value),
       extras: [...document.querySelectorAll('#extras .extra')].map(el => [el.querySelector('[data-x=s]').value, el.querySelector('[data-x=r]').value]),
+      trabalhos: [...document.querySelectorAll('#trabalhos .extra')].map(el => [el.querySelector('[data-x=s]').value, el.querySelector('[data-x=r]').value]),
     };
   }
   function restaurarFoto(f) {
@@ -1788,6 +1962,7 @@
     limparCampos();
     Object.keys(CAMPOS).forEach((id, i) => $(id).value = f.campos[i]);
     f.extras.forEach(([s, r]) => adicionarExtra(s, r));
+    (f.trabalhos || []).forEach(([s, r]) => adicionarPeriodo('trabalhos', s, r));
     editando = f.editando;
     renderTudo();
   }
@@ -1858,7 +2033,7 @@
         st.saldo -= existente.conta;
         st.historico = st.historico.filter(h => h !== existente);
       }
-      const conta = tipo === 'banco' ? -esperadoDia(st.semana[diaSemana(d)]) : 0;
+      const conta = tipo === 'banco' ? -esperadoDia(cfgDaData(d)) : 0;
       st.historico.push({ data: d, folga: tipo, motivo, conta });
       st.saldo += conta;
       total += conta;
@@ -1887,6 +2062,7 @@
       entrada: $('bEntrada').value, almIni: $('bAlmIni').value, almFim: $('bAlmFim').value, saida: $('bSaida').value,
       extras: d.extras.filter(x => x.s != null || x.r != null)
         .map(x => [x.s != null ? clock(x.s) : '', x.r != null ? clock(x.r) : '']),
+      trabalhos: an.trabalhos.map(x => [clock(x.s), clock(x.r)]),
       conta: calcular(an, cfg).conta,
     });
   });
@@ -1910,7 +2086,7 @@
     if (!de || ate < de) return null;
     const dias = [];
     for (let d = de, i = 0; d <= ate && i < 370; d = somarDias(d, 1), i++) {
-      if (de === ate || st.semana[diaSemana(d)].trabalha) dias.push(d);
+      if (de === ate || cfgDaData(d).trabalha) dias.push(d);
     }
     return dias;
   }
@@ -1924,7 +2100,7 @@
     $('btnConfirmarFolga').disabled = !ok;
     if (!dias) { resumo.textContent = 'A data final precisa ser igual ou depois da inicial.'; return; }
     if (!dias.length) { resumo.textContent = 'Não há dias de trabalho nesse período.'; return; }
-    const total = tipoFolga() === 'banco' ? -dias.reduce((s, d) => s + esperadoDia(st.semana[diaSemana(d)]), 0) : 0;
+    const total = tipoFolga() === 'banco' ? -dias.reduce((s, d) => s + esperadoDia(cfgDaData(d)), 0) : 0;
     const subst = dias.filter(d => st.historico.some(h => h.data === d)).length;
     const n = dias.length === 1 ? `${ABREV[diaSemana(dias[0])].toLowerCase()}, ${fmtData(dias[0])}` : `${dias.length} dias de trabalho`;
     resumo.textContent = `Vai lançar folga em ${n}: ${total ? `${sinal(total)} no saldo` : 'o saldo não muda'}.`
@@ -1953,10 +2129,115 @@
     lancarFolgas(dias, tipoFolga(), $('folgaMotivo').value.trim());
   });
 
+  // ---------- horário especial de um dia ----------
+  const ESP_CAMPOS = { espEntrada: 'entrada', espAlmIni: 'almIni', espAlmFim: 'almFim', espSaida: 'saida' };
+  function lerEspecial() {
+    const o = {};
+    Object.entries(ESP_CAMPOS).forEach(([id, k]) => o[k] = $(id).value);
+    o.motivo = $('espMotivo').value.trim();
+    return o;
+  }
+  // Valida o horário especial; devolve mensagem de erro ou null
+  function erroEspecial(o) {
+    const e = parseHM(o.entrada), s = parseHM(o.saida), ai = parseHM(o.almIni), af = parseHM(o.almFim);
+    if (e == null || s == null) return 'Preencha a entrada e a saída.';
+    if (s <= e) return 'A saída precisa ser depois da entrada.';
+    if ((ai == null) !== (af == null)) return 'Preencha a saída e a volta do almoço, ou deixe as duas em branco.';
+    if (ai != null && (af < ai || ai < e || af > s)) return 'O almoço precisa ficar entre a entrada e a saída.';
+    return null;
+  }
+  function renderEspecial() {
+    const o = lerEspecial(), erro = erroEspecial(o);
+    const el = $('espResumo');
+    el.classList.toggle('erro', !!erro);
+    $('espSalvar').disabled = !!erro;
+    if (erro) { el.textContent = erro; return; }
+    const data = $('diaData').value;
+    const padraoDia = st.semana[diaSemana(data)];
+    const novo = esperadoDia({ trabalha: true, ...o });
+    const antes = esperadoDia(padraoDia);
+    el.textContent = `Jornada deste dia: ${curto(novo)}` + (padraoDia.trabalha ? ` (o padrão é ${curto(antes)}).` : '.');
+  }
+  function abrirEspecial(motivoSugerido) {
+    const data = $('diaData').value || hoje();
+    const atual = st.especiais && st.especiais[data];
+    const base = atual || st.semana[diaSemana(data)];
+    Object.entries(ESP_CAMPOS).forEach(([id, k]) => $(id).value = base[k] || '');
+    $('espMotivo').value = atual ? (atual.motivo || '') : (motivoSugerido || '');
+    $('espData').textContent = `Muda o horário só de ${DIAS[diaSemana(data)].toLowerCase()}, ${fmtData(data)}. Os outros dias continuam com o horário padrão.`;
+    $('espRemover').hidden = !atual;
+    renderEspecial();
+    const dlg = $('dlgEspecial');
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  // Grava (ou remove, com o = null) o horário especial e recalcula o dia se já foi lançado
+  function gravarEspecial(data, o) {
+    const foto = fotografar();
+    st.especiais = st.especiais || {};
+    if (o) st.especiais[data] = o; else delete st.especiais[data];
+    const h = st.historico.find(x => x.data === data);
+    let delta = 0;
+    if (h) { delta = recalcularLancamento(h); st.saldo += delta; }
+    salvar();
+    renderTudo();
+    const quando = `${ABREV[diaSemana(data)].toLowerCase()}, ${fmtData(data)}`;
+    const cfg = cfgDaData(data);
+    const msg = o
+      ? `Horário especial salvo para ${quando}: jornada de ${curto(esperadoDia(cfg))}.`
+      : `${quando[0].toUpperCase()}${quando.slice(1)} voltou ao horário padrão.`;
+    avisar(msg + (delta ? ` O dia já lançado foi recalculado e o saldo mudou ${sinal(delta)}.` : ''), foto);
+  }
+  function renderListaEspeciais() {
+    const datas = Object.keys(st.especiais || {}).sort();
+    $('listaEspeciais').innerHTML = datas.length
+      ? datas.map(d => {
+          const e = st.especiais[d];
+          const alm = e.almIni && e.almFim ? `, almoço ${e.almIni} às ${e.almFim}` : '';
+          return `<li><span><b>${ABREV[diaSemana(d)]}, ${fmtData(d)}</b>${e.motivo ? `: ${esc(e.motivo)}` : ''}
+            <small>${e.entrada} às ${e.saida}${alm}. Jornada de ${curto(esperadoDia({ trabalha: true, ...e }))}.</small></span>
+            <button class="btn-texto esp-remover" type="button" data-remover-esp="${d}">Remover</button></li>`;
+        }).join('')
+      : '<li><span class="ajuda" style="margin:0">Nenhum horário especial.</span></li>';
+  }
+  $('btnEspecial').addEventListener('click', () => abrirEspecial());
+  $('formEspecial').addEventListener('input', renderEspecial);
+  $('espManha').addEventListener('click', () => {
+    const p = st.semana[diaSemana($('diaData').value || hoje())];
+    $('espEntrada').value = p.entrada || '07:00';
+    $('espSaida').value = p.almIni || '11:45';
+    $('espAlmIni').value = '';
+    $('espAlmFim').value = '';
+    if (!$('espMotivo').value) $('espMotivo').value = 'Meio expediente';
+    renderEspecial();
+  });
+  $('espPadrao').addEventListener('click', () => {
+    const p = st.semana[diaSemana($('diaData').value || hoje())];
+    Object.entries(ESP_CAMPOS).forEach(([id, k]) => $(id).value = p[k] || '');
+    renderEspecial();
+  });
+  $('espSalvar').addEventListener('click', () => {
+    const o = lerEspecial();
+    if (erroEspecial(o)) return;
+    $('dlgEspecial').close();
+    gravarEspecial($('diaData').value, o);
+  });
+  $('espRemover').addEventListener('click', () => {
+    $('dlgEspecial').close();
+    gravarEspecial($('diaData').value, null);
+  });
+  $('listaEspeciais').addEventListener('click', e => {
+    const b = e.target.closest('[data-remover-esp]');
+    if (!b) return;
+    gravarEspecial(b.dataset.removerEsp, null);
+    renderListaEspeciais();
+  });
+
   $('btnLancarFeriado').addEventListener('click', () => {
     const data = $('diaData').value;
     const fer = feriadoEm(data);
-    if (fer) lancarFolgas([data], 'abonada', fer.nome);
+    if (!fer) return;
+    if (fer.vespera) abrirEspecial(fer.nome);
+    else lancarFolgas([data], 'abonada', fer.nome);
   });
 
   $('histMes').addEventListener('change', () => { mesFiltro = $('histMes').value; renderHistorico(); });
@@ -2054,13 +2335,24 @@
     adicionarExtra().querySelector('[data-x=s]').focus();
     renderDia();
   });
-  $('extras').addEventListener('click', e => {
-    const btn = e.target.closest('[data-remover]');
-    if (!btn) return;
-    btn.closest('.extra').remove();
-    numerarExtras();
+  $('btnTrabalho').addEventListener('click', () => {
+    adicionarPeriodo('trabalhos').querySelector('[data-x=s]').focus();
     renderDia();
   });
+  ['extras', 'trabalhos'].forEach(lista => $(lista).addEventListener('click', e => {
+    const linha = e.target.closest('.extra');
+    if (e.target.closest('[data-remover]')) {
+      linha.remove();
+      numerarExtras();
+      renderDia();
+    } else if (e.target.closest('[data-mover]')) {
+      // saída fora do expediente vira trabalho extra
+      const s = linha.querySelector('[data-x=s]').value, r = linha.querySelector('[data-x=r]').value;
+      linha.remove();
+      adicionarPeriodo('trabalhos', s, r);
+      renderDia();
+    }
+  }));
 
   // ajustes
   // Máscara do saldo: digita só números e os dois pontos entram sozinhos (430 → 04:30, 3630 → 36:30)
